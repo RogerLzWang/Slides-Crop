@@ -1,3 +1,16 @@
+#!/usr/bin/python
+################################################################################
+#
+#   draggableslide.py
+#   Author: Roger Wang
+#   Date: 2024-06-16
+#
+#   
+#
+################################################################################
+
+import math
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -70,16 +83,30 @@ class DraggableSlide(QWidget):
 
         parent_layout = self.parent().layout()
 
-        all_images = [parent_layout.itemAt(i).widget() \
-                      for i in range(parent_layout.count())]
-
-        # Sort the list of widgets by their x position.
-        order = sorted(all_images, key = lambda i: i.pos().x())
+        images = [parent_layout.itemAt(i).widget() \
+                  for i in range(parent_layout.count())]
+                
+        # First, sort all the images into their corresponding rows.
+        image_rows = [[] for _ in range(parent_layout.rows)]
+        for image in images:
+            for i in range(parent_layout.rows - 1, -1, -1):
+                if image.pos().y() + image.height() / 2 \
+                    >= parent_layout.rows_y[i]:
+                    image_rows[i].append(image)
+                    break
+                elif i == 0:
+                    image_rows[0].append(image)
         
-        # Remove each item from the layout and insert in new order.
-        for index, widget in enumerate(order):
-            parent_layout.takeAt(index)
-            parent_layout.insertWidget(index, widget)
+        # Next, sort all the rows by the x position of images in that row.
+        for i in range(len(image_rows)):
+            image_rows[i] = sorted(image_rows[i], key = lambda i: i.pos().x())
+
+        # Finally, remove each item from the layout and insert in new order.
+        for i in range(parent_layout.count()):
+            parent_layout.itemAt(0).widget().setParent(None)
+        for i in range(len(image_rows)):
+            for j in range(len(image_rows[i])):
+                parent_layout.addWidget(image_rows[i][j])
 
         self.order_changed.emit()
         

@@ -170,6 +170,8 @@ cython_debug/
 .DS_Store
 
 # Old / Reference files.
+draggableimage_old.py
+flowlayout_old.py
 imageviewer_old.py
 
 # Test files.

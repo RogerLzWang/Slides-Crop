@@ -13,7 +13,7 @@ from step2 import *
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.setMinimumSize(1080, 640)
+        #self.setMinimumSize(1080, 640)
         self.resize(1080, 720)
         self.setUnifiedTitleAndToolBarOnMac(True)
 

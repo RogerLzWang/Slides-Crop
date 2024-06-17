@@ -3,19 +3,20 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from draggableslide import *
+from flowlayout import *
 from project import *
 
 class SlideQueue(QScrollArea):
     project_edited = pyqtSignal()
 
     def __init__(self, project):
-        super(SlideQueue, self).__init__()
+        super().__init__()
 
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self._project = project
-        self._layout = QHBoxLayout()
-        self._layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
+        self.setWidgetResizable(True)
         self._widget = QWidget()
-        self._widget.setLayout(self._layout)
+        self._layout = FlowLayout(self._widget)
 
         self.setWidget(self._widget)
     
