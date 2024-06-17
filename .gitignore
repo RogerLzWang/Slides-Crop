@@ -173,10 +173,10 @@ cython_debug/
 imageviewer_old.py
 
 # Test files.
+test.py
 imageviewer_test.py
 slidequeue_test.py
 slideviewer_test.py
-test.py
 
 # Slides Crop project files.
 *.scp
