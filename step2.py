@@ -1,0 +1,285 @@
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
+
+from slideviewer import *
+from stepheader import *
+
+class Step2(QWidget):
+    back_clicked = pyqtSignal()
+    project_edited = pyqtSignal()
+    returned = pyqtSignal()
+
+    def __init__(self, parent, project, color, resolution):
+        super().__init__(parent)
+        self._project = project
+        self._selection_width = project.width
+        self._selection_height = project.height
+        self._color = color
+        self._resolution = resolution
+
+        self._layout = self._get_step_2(self._project.work_index)
+        self.setLayout(self._layout)
+        self._slide_viewer.setFocus()
+
+    def get_project(self):
+        return self._project
+
+    def _get_step_2(self, index):
+        self._header = StepHeader(self, self._project, 2)
+        self._header.project_edited.connect(self.project_edited_handler)
+        self._header.returned.connect(self.returned_handler)
+        main_layout = self._get_step_2_main(index)
+        footer_layout = self._get_step_2_footer(index)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self._header)
+        layout.addLayout(main_layout)
+        layout.addLayout(footer_layout)
+
+        return layout
+
+    """
+    Return a QHBoxLayout that is the layout for the main section during step 2.
+    """
+    def _get_step_2_main(self, index):
+        self._slide_viewer = SlideViewer(self, self._color)
+        self._slide_viewer.set_resolution(self._resolution)
+        self._slide_viewer.set_selection_size(self._project.width, \
+                                              self._project.height)
+        self._image_index_label = QLabel()
+        self._image_title_label = QLabel()
+        self._image_size_label = QLabel()
+        self._image_selection_label = QLabel()
+        self._image_selection_size_label = QLabel()
+        image_selection_size_button = QPushButton(text = "Edit")
+        image_selection_size_button.clicked.connect(\
+            self._image_selection_size_button_clicked)
+
+        main_selection_size_layout = QHBoxLayout()
+        main_selection_size_layout.addWidget(self._image_selection_size_label)
+        main_selection_size_layout.addWidget(image_selection_size_button)
+
+        main_sublayout = QVBoxLayout()
+        main_sublayout.addWidget(self._image_index_label)
+        main_sublayout.addWidget(self._image_title_label)
+        main_sublayout.addWidget(self._image_size_label)
+        main_sublayout.addWidget(self._image_selection_label)
+        main_sublayout.addLayout(main_selection_size_layout)
+
+        main_layout = QHBoxLayout()
+        main_layout.addWidget(self._slide_viewer)
+        main_layout.addLayout(main_sublayout)
+
+        self._update_step_2_main(index)
+        self._slide_viewer.project_edited.connect(self.project_edited_handler)
+
+        return main_layout
+
+    def _update_step_2_main(self, index):
+        slide = self._project.slides[index - 1]
+        self._slide_viewer.set_slide(slide)
+        self._image_index_label.setText("%d / %d" \
+                                        %(index, len(self._project.slides)))
+        self._image_title_label.setText(slide.file_name)
+        self._image_size_label.setText("Image: %d px x %d px" \
+                                       %(slide.width, slide.height))
+        self.update_selection_label()
+        self.update_selection_size_label()
+
+    """
+    Return a QHBoxLayout that is the layout for the footer during step 2.
+    """
+    def _get_step_2_footer(self, index):
+        back_button = QPushButton(text = "Back")
+        back_button.clicked.connect(self._back_button_clicked)
+        self.previous_button = QPushButton(text = "<")
+        self.next_button = QPushButton(text = ">")
+        export_button = ExportToolButton()
+        export_button.clicked.connect(self.export)
+        export_button.export_all.connect(self.export_all)
+
+        # Connecting buttons.
+        self.next_button.clicked.connect(self._next_button_clicked)
+        self.previous_button.clicked.connect(self._previous_button_clicked)
+
+        footer_layout = QHBoxLayout()
+        footer_layout.addStretch()
+        footer_layout.addWidget(back_button)
+        footer_layout.addWidget(self.previous_button)
+        footer_layout.addWidget(self.next_button)
+        footer_layout.addWidget(export_button)
+
+        self._update_step_2_footer(index)
+
+        return footer_layout
+    
+    def _update_step_2_footer(self, index):
+        # Disabling buttons if necessary.
+        if index == 1:
+            self.previous_button.setEnabled(False)
+        else:
+            self.previous_button.setEnabled(True)
+        if index == len(self._project.slides):
+            self.next_button.setEnabled(False)
+        else:
+            self.next_button.setEnabled(True)
+    
+    def _next_button_clicked(self):
+        self._project.work_index += 1
+        self.update()
+
+    def _previous_button_clicked(self):
+        self._project.work_index -= 1
+        self.update()
+
+    def _image_selection_size_button_clicked(self):
+        selection_size_dialog = SelectionSizeDialog(self._selection_width, \
+                                                    self._selection_height)
+        selection_size_dialog.apply_clicked.connect(self.update_selection_size)
+        selection_size_dialog.applyall_clicked.connect(\
+            self.update_all_selection_size)
+        selection_size_dialog.exec()
+
+    def update_selection_size(self, width, height):
+        self._selection_width = width
+        self._selection_height = height
+        self.update_selection_size_label()
+        self._slide_viewer.set_selection_size(width, height)
+
+    def update_all_selection_size(self, width, height):
+        for slide in self._project.slides:
+            slide.set_selection_size(width, height)
+        self._selection_width = width
+        self._selection_height = height
+        self._slide_viewer.set_selection_size(width, height)
+        self.update()
+        self.project_edited.emit()
+
+    def _back_button_clicked(self):
+        self.back_clicked.emit()
+
+    def update(self):
+        self._header.update_title()
+        self._update_step_2_main(self._project.work_index)
+        self._update_step_2_footer(self._project.work_index)
+
+    def update_selection_label(self):
+        self._image_selection_label.setText("%d / %d Selections" \
+                                            %(len(self._project.slides[\
+                                            self._project.work_index - 1].\
+                                            selections), \
+                                            self._project.selection))
+    
+    def update_selection_size_label(self):
+        self._image_selection_size_label.setText("Selection: %d px x %d px" \
+                                                 %(self._selection_width, \
+                                                   self._selection_height))
+
+    def project_edited_handler(self):
+        self.project_edited.emit()
+        self.update_selection_label()
+    
+    def returned_handler(self):
+        self.returned.emit()
+
+    def export(self):
+        dialog = QFileDialog()
+        directory = dialog.getExistingDirectory(\
+            caption = "Select Output Directory", \
+            options = QFileDialog.Option.ShowDirsOnly)
+        if directory:
+            self._project.slides[self._project.work_index - 1].\
+                save_crops(directory)
+
+    def export_all(self):
+        dialog = QFileDialog()
+        directory = dialog.getExistingDirectory(\
+            caption = "Select Output Directory", \
+            options = QFileDialog.Option.ShowDirsOnly)
+        if directory:
+            for i in range(len(self._project.slides)):
+                self._project.slides[i].save_crops(directory)
+
+class SelectionSizeDialog(QDialog):
+    apply_clicked = pyqtSignal(int, int)
+    applyall_clicked = pyqtSignal(int, int)
+
+    def __init__(self, width, height):
+        super().__init__()
+        self.setWindowTitle("Selection Size")
+
+        self.width_lineedit = QLineEdit()
+        self.width_lineedit.setFixedWidth(60)
+        self.width_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.width_lineedit.setValidator(QIntValidator(2, 100000))
+        self.width_lineedit.setText(str(width))
+
+        label_1 = QLabel(text = "px  x")
+
+        self.height_lineedit = QLineEdit()
+        self.height_lineedit.setFixedWidth(60)
+        self.height_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.height_lineedit.setValidator(QIntValidator(2, 100000))
+        self.height_lineedit.setText(str(height))
+
+        label_2 = QLabel(text = "px")
+        
+        cancel_button = QPushButton(text = "Cancel")
+        cancel_button.clicked.connect(self.reject)
+        apply_button = QPushButton(text = "Apply")
+        apply_button.clicked.connect(self.apply_clicked_handler)
+        apply_button.setDefault(True)
+        applyall_button = QPushButton(text = "Apply to All")
+        applyall_button.clicked.connect(self.applyall_clicked_handler)
+
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(self.width_lineedit)
+        size_layout.addWidget(label_1)
+        size_layout.addWidget(self.height_lineedit)
+        size_layout.addWidget(label_2)
+        size_layout.addStretch()
+
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(cancel_button)
+        button_layout.addStretch()
+        button_layout.addWidget(apply_button)
+        button_layout.addWidget(applyall_button)
+
+        layout = QVBoxLayout()
+        layout.addStretch()
+        layout.addLayout(size_layout)
+        layout.addStretch()
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
+
+    def apply_clicked_handler(self):
+        self.apply_clicked.emit(int(self.width_lineedit.text()), \
+                                int(self.height_lineedit.text()))
+        self.close()
+        
+    def applyall_clicked_handler(self):
+        self.applyall_clicked.emit(int(self.width_lineedit.text()), \
+                                   int(self.height_lineedit.text()))
+        self.close()
+
+class ExportToolButton(QToolButton):
+    export_all = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.setText("Export")
+        self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+
+        export_all_action = QAction("Export All", self)
+        export_all_action.triggered.connect(self.export_all_triggered)
+
+        menu = QMenu()
+        menu.addAction(export_all_action)
+
+        self.setMenu(menu)
+
+    def export_all_triggered(self):
+        self.export_all.emit()
