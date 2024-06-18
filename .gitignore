@@ -193,3 +193,6 @@ slideviewer_test.py
 
 # Designer files.
 *.ai
+
+# Sample project JSON files.
+project_sample.json
