@@ -3,7 +3,7 @@
 #
 #   mainwindow.py
 #   Author: Roger Wang
-#   Date: 2024-06-17
+#   Date: 2024-06-18
 #
 #   The MainWindow (inherited from QMainWindow) for Slides Crop.
 #   The MainWindow manages the change of the program from Starter, where 
@@ -148,6 +148,9 @@ class MainWindow(QMainWindow):
                 event.ignore()
 
 class CloseSaveDialog(QDialog):
+    # This dialog shows when the user clicks on the close button on the window 
+    # but the project has not been saved.
+
     def __init__(self, project):
         super().__init__()
         self._project = project
@@ -181,10 +184,20 @@ class CloseSaveDialog(QDialog):
 
         self.setLayout(layout)
 
+    """
+    Handler for when user clicks "Save" on the dialog.
+    This function is necessary as the user might click "Cancel" while the file 
+    dialog shows. In this case, we do not close the application to avoid 
+    unwanted loss of data.
+    """
     def save_clicked(self):
         if self.save_project():
             self.accept()
 
+    """
+    Saving the project. Prompts a file dialog if no path is in the project.
+    @return True (project saved successfully) / False (project not saved).
+    """
     def save_project(self):
         if self._project.path:
             self._project.save_json(self._project.path)
@@ -202,6 +215,9 @@ class CloseSaveDialog(QDialog):
             return False
         
 class NoSlideErrorDialog(QDialog):
+    # This dialog shows when the user attempts to proceed to Step2 without 
+    # adding any slides.
+    
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Error")

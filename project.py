@@ -1,3 +1,16 @@
+#!/usr/bin/python
+################################################################################
+#
+#   project.py
+#   Author: Roger Wang
+#   Date: 2024-06-18
+#
+#   Project and all associated classes to contain information of a project.
+#   A Project contains a list of Slides, while a Slide contains a list of 
+#   SlideSelections.
+#
+################################################################################
+
 import json
 import math
 import os
@@ -5,6 +18,7 @@ import tempfile
 
 from PIL import Image
 
+# Removing the maximum image size limit for Pillow.
 Image.MAX_IMAGE_PIXELS = None
 
 class Project():
@@ -26,14 +40,22 @@ class Project():
         self.width = 0
         self.height = 0
 
+    """
+    Save the project into a JSON format file.
+    Note that in practice, the project file always have SCP extensions.
+    @param path: str, the path to the project file.
+    """
     def save_json(self, path):
         slides = []
+
+        # Iterate slides.
         for slide in self.slides:
             temp_slide = {
                 "path": slide.path,
             }
             selections = []
 
+            # Iterate selections.
             for selection in slide.selections:
                 temp_selection = {
                     "center_x": selection.center_coordinates[0],
@@ -45,6 +67,7 @@ class Project():
             temp_slide.update({"selections": selections})
             slides.append(temp_slide)
 
+        # Adding information about the project.
         project = {
             "name": self.name,
             "work_index": self.work_index,
@@ -54,16 +77,25 @@ class Project():
             "slides": slides
         }
 
+        # Saving.
         with open(path, "w") as file: 
             json.dump(project, file, indent = 4)
 
         self.saved = True
         self.path = path
         
+    """
+    Load and initialize the Project from a JSON format file.
+    Note that in practice, the project file always have SCP extensions.
+    @param path: str, the path to the project file.
+    @param resolution: float, the resolution of the preview file generated.
+    """
     def load_json(self, path, resolution):
         self.path = path
         self.saved = True
         self.slides = []
+
+        # Loading project file.
         with open(path, "r") as file:
             project = json.load(file)
         
@@ -73,8 +105,11 @@ class Project():
         self.width = project["width"]
         self.height = project["height"]
 
+        # Iterate slides.
         for slide in project["slides"]:
             temp_slide = Slide(slide_path = slide["path"])
+
+            # Iterate selections.
             for selection in slide["selections"]:
                 temp_selection = SlideSelection()
                 temp_selection.center_coordinates = (selection["center_x"], 
@@ -86,8 +121,9 @@ class Project():
             temp_slide.generate_previews(resolution)
             self.slides.append(temp_slide)
 
-# Each Slide corresponds to an image of a slide.
 class Slide():
+    # Each Slide corresponds to an image of a slide.
+
     def __init__(self, slide_path, resolution = 0.5):
         self.file_name = os.path.basename(slide_path)
 
@@ -100,7 +136,7 @@ class Slide():
         self.width = 0
         self.height = 0
 
-        # Temporary preview files.
+        # Path of the temporary preview file.
         self.preview = None
 
         self.generate_previews(resolution)
@@ -152,6 +188,10 @@ class Slide():
             x = min(x, self.width - math.ceil(width / 2))
             y = min(y, self.height - math.ceil(height / 2))
 
+    """
+    Generate a preview temp file and store its path with the given resolution.
+    @param resolution: float, the resolution of the preview files generated.
+    """
     def generate_previews(self, resolution):
         original = Image.open(self.path)
         self.width, self.height = original.size
@@ -167,9 +207,10 @@ class Slide():
             # Saving the preview images in the temporary files.
             preview.save(self.preview, format = "PNG")
 
-    def check_path(self, path):
-        pass
-
+    """
+    Get a list of the names of the cropped image files for this Slide.
+    @return list of str, the list of file names.
+    """
     def get_crop_names(self):
         names = []
         name_prefix = self.file_name[:self.file_name.rfind(".")]
@@ -178,6 +219,11 @@ class Slide():
         
         return names
 
+    """
+    Save all cropped image selections to a given path.
+    NOte that get_crop_names is called in this function.
+    @param path: str, the path to the directory for the files to be saved in.
+    """
     def save_crops(self, path):
         names = self.get_crop_names()
         image = Image.open(self.path)

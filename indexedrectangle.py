@@ -185,7 +185,7 @@ class IndexedRectangleObject(QGraphicsObject):
     # Doing this allows the use of signals and slots through the 
     # QGraphicsObject.
     coordinates_changed = pyqtSignal(int, float, float)
-    indexed_rectangle_removed = pyqtSignal(int)
+    removed = pyqtSignal(int)
 
     def __init__(self, parent):
         super().__init__(parent)
@@ -198,7 +198,7 @@ class IndexedRectangleObject(QGraphicsObject):
     def contextMenuEvent(self, event):
         # Right-clicking on the IndexedRectangle causes the selection to be 
         # removed.
-        self.indexed_rectangle_removed.emit(self.parentItem().get_index())
+        self.removed.emit(self.parentItem().get_index())
     
     def boundingRect(self):
         # Return the boundingRect of the parent IndexedRectangle.

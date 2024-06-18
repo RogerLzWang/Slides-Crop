@@ -1,3 +1,17 @@
+#!/usr/bin/python
+################################################################################
+#
+#   stepheader.py
+#   Author: Roger Wang
+#   Date: 2024-06-18
+#
+#   StepHeader is a QWidget that is the toolbar/banner used by both Step1 and 
+#   Step2. It displays the project's name and the description of the current 
+#   step. Buttons for returning to the Starter, editing project settings, and 
+#   saving the project are also provided.
+#
+################################################################################
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -13,14 +27,19 @@ class StepHeader(QWidget):
         self._layout = self._get_step_header()
         self.setLayout(self._layout)
     
+    """
+    Sets the project for the StepHeader.
+    @param project: Project object.
+    """
     def set_project(self, project):
         self._project = project
 
     """
     Return a QHBoxLayout that is the layout for the headers.
+    @return QLayout, the requeted layout.
     """
     def _get_step_header(self):
-        #
+        # Creating all necessary QWidgets.
         return_button = QPushButton(text = "<")
         return_button.clicked.connect(self.return_button_clicked)
         self.title_label = QLabel()
@@ -33,11 +52,13 @@ class StepHeader(QWidget):
         saveas_button = QPushButton(text = "Save As")
         saveas_button.clicked.connect(self.saveas_button_clicked)
 
+        # The text on the subtitle changes based on the current step.
         if self._step == 1:
             subtitle_label.setText("Step 1: Add images of slides.")
         elif self._step == 2:
             subtitle_label.setText("Step 2: Make selections on slide images.")
 
+        # Creating layouts.
         header_title_layout = QVBoxLayout()
         header_title_layout.addWidget(self.title_label)
         header_title_layout.addWidget(subtitle_label)
@@ -52,20 +73,35 @@ class StepHeader(QWidget):
 
         return header_layout
 
+    """
+    Updates the title label in case the name of the project has changed.
+    """
+    def update_title(self):
+        self.title_label.setText(self._project.name)
+
+    """
+    Handler for when the return button has been clicked.
+    """
     def return_button_clicked(self):
         if not self._project.saved:
-            return_dialog = CloseSaveDialog(self._project)
+            return_dialog = ReturnSaveDialog(self._project)
             return_dialog.project_saved.connect(self.project_saved_handler)
             if return_dialog.exec():
                 self.returned.emit()
         else:
             self.returned.emit()
 
+    """
+    Handler for when the user has clicked the "Settings" button.
+    """
     def settings_button_clicked(self):
         project_edit_dialog = ProjectEditDialog(self._project)
         project_edit_dialog.project_edited.connect(self.project_edited_handler)
         project_edit_dialog.exec()
 
+    """
+    Handler for when the user has clicked the "Save" button.
+    """
     def save_button_clicked(self):
         if self._project.path:
             self._project.save_json(self._project.path)
@@ -73,6 +109,9 @@ class StepHeader(QWidget):
         else:
             self.saveas_button_clicked()
 
+    """
+    Handler for when the user has clicked the "Save As" button.
+    """
     def saveas_button_clicked(self):
         filename, _ = QFileDialog.getSaveFileName(\
             caption = "Create a project file", \
@@ -82,17 +121,25 @@ class StepHeader(QWidget):
             self._project.save_json(filename)
             self.window().setWindowModified(False)
 
+    """
+    Handler for when the Project has been saved.
+    """
     def project_saved_handler(self):
         self.window().setWindowModified(False)
 
+    """
+    Handler for when the Project has been edited.
+    Notice that the label displaying the Project;s name will also be updated 
+    with this function.
+    """
     def project_edited_handler(self):
         self.project_edited.emit()
         self.update_title()
 
-    def update_title(self):
-        self.title_label.setText(self._project.name)
-
 class ProjectEditDialog(QDialog):
+    # The ProjectEditDialog is prompted when the user clicks the "Settings" 
+    # button during Step1 or Step2.
+
     project_edited = pyqtSignal()
 
     def __init__(self, project):
@@ -166,7 +213,13 @@ class ProjectEditDialog(QDialog):
 
         self.setLayout(layout)
 
+    ############################################################################
+    # The following section contains overridden functions to customize features.
+    ############################################################################
+
     def accept(self):
+        # When the dialog is accepted, update all settings in the Project 
+        # before closing.
         self._project.name = self.name_lineedit.text()
         self._project.selection = self.index_spinbox.value()
         self._project.width = int(self.width_lineedit.text())
@@ -174,7 +227,10 @@ class ProjectEditDialog(QDialog):
         self.project_edited.emit()
         super().accept()
 
-class CloseSaveDialog(QDialog):
+class ReturnSaveDialog(QDialog):
+    # The ReturnSaveDialog is prompted when the user clicks the return button 
+    # but unsaved changes are present.
+
     project_saved = pyqtSignal()
 
     def __init__(self, project):
@@ -210,6 +266,11 @@ class CloseSaveDialog(QDialog):
 
         self.setLayout(layout)
 
+    """
+    Handler for when the user clicks "Save".
+    If no path has been set for the project, prompt a QFileDialog to determine 
+    the path of the project.
+    """
     def save_clicked(self):
         if self._project.path:
             self._project.save_json(self._project.path)

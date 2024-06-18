@@ -1,3 +1,14 @@
+#!/usr/bin/python
+################################################################################
+#
+#   starter.py
+#   Author: Roger Wang
+#   Date: 2024-06-18
+#
+#   Starter is a QWidget that contains all elements of the Starter screen.
+#
+################################################################################
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -16,19 +27,33 @@ class Starter(QWidget):
         self._layout = self._get_starter()
         self.setLayout(self._layout)
 
+    """
+    Get the loaded project.
+    @return Project object.
+    """
     def get_project(self):
         return self._project
-    
+
+    """
+    Get the current resolution setting.
+    @return float, the current resolution setting.
+    """
     def get_resolution(self):
         return self._resolution
-    
+
+    """
+    Get the current color for displaying the selections during Step2.
+    @return QColor.
+    """
     def get_color(self):
         return self._color
 
     """
     Return a QVBoxLayout that is the start up screen.
+    @return QLayout, the requeted layout.
     """
     def _get_starter(self):
+        # Getting sublayouts.
         starter_header_layout = self._get_starter_header()
         starter_main_layout = self._get_starter_main()
 
@@ -40,7 +65,11 @@ class Starter(QWidget):
         starter_layout.addWidget(starter_footer)
 
         return starter_layout
-    
+
+    """
+    Return a QHBoxLayout that is the header section during start up.
+    @return QLayout, the requeted layout.
+    """
     def _get_starter_header(self):
         logo = QPixmap()
         logo_label = QLabel()
@@ -61,8 +90,10 @@ class Starter(QWidget):
 
     """
     Return a QHBoxLayout that is the main section during start up.
+    @return QLayout, the requeted layout.
     """
     def _get_starter_main(self):
+        # Widgets and layouts for the "New Project" section.
         new_title_label = QLabel(text = "New Project")
         new_subtitle_label = QLabel(text = \
             "Create a new project and import your slide images.")
@@ -125,7 +156,7 @@ class Starter(QWidget):
         new_layout.addLayout(new_button_layout)
         new_layout.addStretch()
 
-        ###
+        # Widgets and layouts for the "Open Project" section.
 
         open_title_label = QLabel(text = "Open Project")
         open_subtitle_label = QLabel(text = "Open an existing project.")
@@ -148,7 +179,7 @@ class Starter(QWidget):
         open_layout.addLayout(open_button_layout)
         open_layout.addStretch()
 
-        ###
+        # Building the main layout.
 
         main_layout = QHBoxLayout()
         main_layout.addSpacing(50)
@@ -161,7 +192,16 @@ class Starter(QWidget):
 
         return main_layout
 
+    """
+    Handler for when the user clicks the button that creates a new project.
+    """
     def new_button_clicked(self):
+        # Checking that the project name is not empty.
+        if not self.new_name_lineedit.text():
+            dialog = NoNameErrorDialog()
+            dialog.exec()
+            return
+        
         if not self._project:
             self._project = Project()
         self._project.name = self.new_name_lineedit.text()
@@ -175,6 +215,9 @@ class Starter(QWidget):
 
         self.continue_clicked.emit(self._project)
 
+    """
+    Handler for when the user clicks the button that opens an existing project.
+    """
     def open_button_clicked(self):
         dialog = QFileDialog()
         filename, _ = dialog.getOpenFileName(\
@@ -187,13 +230,19 @@ class Starter(QWidget):
             self._project.load_json(filename, self._resolution)
             self.continue_clicked.emit(self._project)
 
+    """
+    Handler for when the user on the button that changes the program's settings.
+    """
     def settings_button_clicked(self):
         settings_edit_dialog = SettingsEditDialog(self._resolution, \
                                                   self._color)
         settings_edit_dialog.settings_changed.connect(\
             self.settings_changed_handler)
         settings_edit_dialog.exec()
-    
+
+    """
+    Handler for when the program's settings are changed.
+    """ 
     def settings_changed_handler(self, resolution, color):
         self._resolution = resolution
         self._color = color
@@ -206,6 +255,7 @@ class SettingsEditDialog(QDialog):
         self.setWindowTitle("Settings")
         self._color = color
 
+        # Preview resolution section.
         preview_label = QLabel(text = "Preview At: ")
         self.preview_100_button = QRadioButton(text = "100%")
         self.preview_50_button = QRadioButton(text = "50%")
@@ -225,6 +275,7 @@ class SettingsEditDialog(QDialog):
         self.preview_buttongroup.addButton(self.preview_25_button)
         self.preview_buttongroup.addButton(self.preview_10_button)
 
+        # Color section.
         color_label = QLabel(text = "Selection Color: ")
         self.color_button = QPushButton()
         self.color_button.setAutoFillBackground(True)
@@ -268,7 +319,25 @@ class SettingsEditDialog(QDialog):
 
         self.setLayout(layout)
 
+    """
+    Handler for when the color change button is clicked.
+    """ 
+    def color_button_clicked(self):
+        # Prompts a new dialog that gets the user's customized color.
+        color = QColorDialog.getColor()
+        if color.isValid():
+            self._color = color
+            self.color_button.setStyleSheet("background-color: rgb(%d, %d, %d)"\
+                                            %(self._color.red(), \
+                                            self._color.green(), \
+                                            self._color.blue()))
+    
+    ############################################################################
+    # The following section contains overridden functions to customize features.
+    ############################################################################
+
     def accept(self):
+        # New settings are emitted as a signal when the dialog is accepted.
         if self.preview_100_button.isChecked():
             self.settings_changed.emit(1, self._color)
         elif self.preview_50_button.isChecked():
@@ -279,11 +348,30 @@ class SettingsEditDialog(QDialog):
             self.settings_changed.emit(0.1, self._color)
         super().accept()
     
-    def color_button_clicked(self):
-        color = QColorDialog.getColor()
-        if color.isValid():
-            self._color = color
-            self.color_button.setStyleSheet("background-color: rgb(%d, %d, %d)"\
-                                            %(self._color.red(), \
-                                            self._color.green(), \
-                                            self._color.blue()))
+class NoNameErrorDialog(QDialog):
+    # This dialog shows when the user attempts to create a Project with no name.
+    
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Error")
+
+        label = QLabel(text = \
+                       "The project's name cannot be empty!")
+
+        ok_button = QPushButton(text = "Ok")
+        ok_button.clicked.connect(self.accept)
+        label_layout = QHBoxLayout()
+        label_layout.addWidget(label)
+        label_layout.addStretch()
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(ok_button)
+
+        layout = QVBoxLayout()
+        layout.addStretch()
+        layout.addLayout(label_layout)
+        layout.addStretch()
+        layout.addLayout(button_layout)
+
+        self.setLayout(layout)
