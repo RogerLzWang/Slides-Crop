@@ -5,11 +5,12 @@
 #   Author: Roger Wang
 #   Date: 2024-06-16
 #
-#   
+#   DraggableSlide is the QWidget added to the SlideQueue in Step1.
+#   A slide can be added via button or removed by right-click.
+#   The order of slides can be changed by dragging and dropping.
+#   Note that the change of order is handeled in this class, not SlideQueue.
 #
 ################################################################################
-
-import math
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
@@ -46,6 +47,10 @@ class DraggableSlide(QWidget):
                                Qt.AlignmentFlag.AlignCenter)
         self.setLayout(self._layout)
     
+    """
+    Set the Slide object represented by this DraggableSlide.
+    @param slide: Slide.
+    """
     def set_slide(self, slide):
         self._slide = slide
         if self._slide.preview:
@@ -60,9 +65,16 @@ class DraggableSlide(QWidget):
                 Qt.TransformationMode.SmoothTransformation))
         self._text.setText(slide.file_name)
 
+    """
+    Returns the Slide object represented by this DraggableSlide.
+    """
     def get_slide(self):
         return self._slide
 
+    ############################################################################
+    # The following section contains overridden functions to customize features.
+    ############################################################################
+    
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
@@ -78,11 +90,11 @@ class DraggableSlide(QWidget):
         super(DraggableSlide, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        # Upon release, reorder may have happened due to dragged slides.
         self.setCursor(Qt.CursorShape.ArrowCursor)
         self.drag_start_pos = None
 
         parent_layout = self.parent().layout()
-
         images = [parent_layout.itemAt(i).widget() \
                   for i in range(parent_layout.count())]
                 
@@ -113,6 +125,7 @@ class DraggableSlide(QWidget):
         super(DraggableSlide, self).mouseReleaseEvent(event)
 
     def contextMenuEvent(self, event):
+        # The slide is removed when right-clicked.
         index = self.parent().layout().indexOf(self)
         self.slide_removed.emit(index)
         self.setParent(None)

@@ -1,3 +1,14 @@
+#!/usr/bin/python
+################################################################################
+#
+#   main.py
+#   Author: Roger Wang
+#   Date: 2024-06-17
+#
+#   Main (program entrance) to Slides Crop. Welcome!
+#
+################################################################################
+
 import sys
 
 from PyQt6.QtCore import *
@@ -7,7 +18,7 @@ from PyQt6.QtWidgets import *
 from mainwindow import *
 
 if __name__ == "__main__":
-    # This removes the image size limit.
+    # Removing the image size limit.
     QImageReader.setAllocationLimit(0)
 
     app = QApplication(sys.argv)

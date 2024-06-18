@@ -1,9 +1,8 @@
-import math
-
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from indexedrectangle import *
 from project import *
 
 # The code contained in this file stems from ekhumoro's response in the post 
@@ -20,7 +19,6 @@ class SlideViewer(QGraphicsView):
         self._scale_factor = 1.1
 
         super().__init__(parent)
-        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
 
         self._slide = None
         # mode:
@@ -202,8 +200,8 @@ class SlideViewer(QGraphicsView):
     # The following section contains overridden functions to customize features.
     ############################################################################
 
-    # Implementing ZoomNativeGesture for MacOS (two finger pinch-to-zoom).
     def event(self, event):
+        # Implementing ZoomNativeGesture for MacOS (two finger pinch-to-zoom).
         if isinstance(event, QNativeGestureEvent):
             if self._mode == 0:
                 if event.gestureType() == \
@@ -214,7 +212,11 @@ class SlideViewer(QGraphicsView):
                     self.zoom(delta and delta // abs(delta))
         return QGraphicsView.event(self, event)
 
-    def enterEvent(self, event):      
+    def enterEvent(self, event):
+        # Change the cursor to the cross cursor when in select mode and 
+        # the cursor enters the image in the SlideViewer.
+        # This function is important. Without it, the cursor shape will not 
+        # change without user clicking on the app first after entering Step2.
         self.setFocus()  
         if self._mode == 1 and self._image.isUnderMouse():
             self.viewport().setCursor(Qt.CursorShape.CrossCursor)
@@ -222,10 +224,12 @@ class SlideViewer(QGraphicsView):
             super().enterEvent(event)
 
     def keyPressEvent(self, event):
+        # Pressing the control key enters the select mode.
         if event.key() == Qt.Key.Key_Control:
             self.set_mode(1)
 
     def keyReleaseEvent(self, event):
+        # Releasing the control key returns to view mode.
         if event.key() == Qt.Key.Key_Control:
             self.set_mode(0)
 
@@ -246,172 +250,39 @@ class SlideViewer(QGraphicsView):
             super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        # The original mouseReleaseEvent will cause the cursor shape to be 
+        # changed back to the arrow.
+        # Therefore, we are only calling the overridden function when in 
+        # view mode.
         if self._mode == 0:
             super().mouseReleaseEvent(event)
     
     def mouseMoveEvent(self, event):
         if self._mode == 1:
+            # The cross cursor is not shown if the mouse leaves the image.
             if self._image.isUnderMouse():
                 self.viewport().setCursor(Qt.CursorShape.CrossCursor)
             else:
                 self.viewport().setCursor(Qt.CursorShape.ArrowCursor)
-        else:                
+        else:       
+            # Similar to mouseReleaseEvent, mouseMoveEvent also changes the 
+            # cursor shape.         
             super().mouseMoveEvent(event)
 
     def resizeEvent(self, event):
+        # This function is also written by ekhumoro. THANK YOU.
         super().resizeEvent(event)
         self.reset_view()
 
     def wheelEvent(self, event):
+        # This function is also written by ekhumoro. THANK YOU.
         if self._mode == 0:
             delta = event.angleDelta().y()
             self.zoom(delta and delta // abs(delta))
 
     def toggleDragMode(self):
+        # This function is also written by ekhumoro. THANK YOU.
         if self.dragMode() == QGraphicsView.DragMode.ScrollHandDrag:
             self.setDragMode(QGraphicsView.DragMode.NoDrag)
         elif not self._image.pixmap().isNull():
             self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
-
-class IndexedRectangle(QGraphicsRectItem):
-    def __init__(self, color = QColor(255, 0, 0)):
-        super().__init__()
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
-        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemSendsGeometryChanges)
-        self.setCursor(Qt.CursorShape.SizeAllCursor)
-
-        self.object = IndexedRectangleObject(self)
-
-        self._index = 0
-        self._center_coordinates = (0, 0)
-        self._width = 0
-        self._height = 0
-
-        color.setAlpha(128)
-        self._border_pen = QPen(color)
-        color.setAlpha(32)
-        self._background_brush = QBrush(color)
-        self.setPen(self._border_pen)
-        self.setBrush(self._background_brush)
-
-        self._font = QFont()
-
-        color.setAlpha(128)
-        self._text_color = color
-        self._palette = QPalette()
-        self._palette.setColor(QPalette.ColorRole.WindowText, self._text_color)
-        self._palette.setColor(QPalette.ColorRole.Window, QColor(0, 0, 0, 0))
-
-        self._label = QLabel()
-        self._label.setCursor(Qt.CursorShape.SizeAllCursor)
-        self._proxy = QGraphicsProxyWidget(self)
-
-    def from_selection(self, selection, coordinates_transform):
-        self._center_coordinates = selection.center_coordinates
-        self._width = selection.width
-        self._height = selection.height
-
-        # Checking that the x and y coordinates don't cause the selection 
-        # to overflow.
-        x = self._center_coordinates[0] - self._width // 2
-        y = self._center_coordinates[1] - self._height // 2
-
-        # Transforming coordinates based on preview.
-        self._width /= coordinates_transform
-        self._height /= coordinates_transform
-        x /= coordinates_transform
-        y /= coordinates_transform
-        self._border_pen.setWidthF(1 / coordinates_transform)
-
-        # Initially set the rectangle and the proxy widget at (0, 0).
-        # Otherwise the coordinate system becomes problematic.
-        self.setRect(0, 0, self._width, self._height)
-        self._label.setText(str(self._index))
-        self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._label.setPalette(self._palette)
-        self._label.setFont(self._font)
-        self._adjust_label()
-        self._proxy.setWidget(self._label)
-        self._proxy.setPos(0, 0)
-
-        x = max(x, 0)
-        y = max(y, 0)
-        x = min(x, self.scene().width() - math.ceil(self._width / 2))
-        y = min(y, self.scene().height() - math.ceil(self._height / 2))
-        self.moveBy(x, y)
-
-    def get_index(self):
-        return self._index
-
-    def set_border_color(self, color):
-        self._border_pen = QPen(color)
-
-    def set_background_color(self, color):
-        self._background_brush = QBrush(color)
-    
-    def set_text_color(self, color):
-        self._text_color = color
-
-    def set_index(self, index):
-        self._index = index
-        if self._label:
-            self._label.setText(str(self._index))
-
-    # Disable the state label so that selected outline doesn't appear.
-    def paint(self, painter, option, a):
-        option.state = QStyle.StateFlag.State_None
-        return super(IndexedRectangle, self).paint(painter, option)
-
-    def itemChange(self, change, value):
-        if change == QGraphicsItem.GraphicsItemChange.ItemPositionChange and \
-            self.scene():
-            bounding_rect = self.boundingRect().translated(value)
-            scene_rect = self.scene().sceneRect()
-
-            if not scene_rect.contains(bounding_rect):
-                if bounding_rect.right() > scene_rect.right():
-                    bounding_rect.moveRight(scene_rect.right())
-                if bounding_rect.x() < 0:
-                    bounding_rect.moveLeft(0)
-                if bounding_rect.bottom() > scene_rect.bottom():
-                    bounding_rect.moveBottom(scene_rect.bottom())
-                if bounding_rect.y() < 0:
-                    bounding_rect.moveTop(0)
-                return bounding_rect.topLeft()
-            
-        # Emitting coordinates_changed signal from child object.
-        elif change == QGraphicsItem.GraphicsItemChange.ItemPositionHasChanged:
-            if self._index:
-                point = self.mapToScene(self.rect().center())
-                self.object.coordinates_changed.emit(self._index, point.x(), \
-                                                     point.y())
-        
-        return super().itemChange(change, value)
-
-    def _adjust_label(self):
-        # Resize the label to fill the rectangle.
-        self._label.resize(int(self._width), int(self._height))
-        
-        # Adjust the size of the font.
-        font_size = 0.5 * min(self._width, self._height)
-        self._font.setPointSizeF(font_size)
-        self._label.setFont(self._font)
-
-# Implementing QGraphicsObject.
-# This object is to be embedded in an IndexedRectangle, which is a 
-# QGraphicsItem.
-# Doing this allows the use of signals and slots through the QGraphicsObject.
-class IndexedRectangleObject(QGraphicsObject):
-    coordinates_changed = pyqtSignal(int, float, float)
-    indexed_rectangle_removed = pyqtSignal(int)
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        self.paint = self.parentItem().paint
-
-    def contextMenuEvent(self, event):
-        self.indexed_rectangle_removed.emit(self.parentItem().get_index())
-    
-    def boundingRect(self):
-        return self.parentItem().boundingRect()

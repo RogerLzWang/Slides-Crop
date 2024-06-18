@@ -1,8 +1,26 @@
+#!/usr/bin/python
+################################################################################
+#
+#   flowlayout.py
+#   Author: Roger Wang
+#   Date: 2024-06-17
+#
+#   FlowLayout is the improved layout (from QHBoxLayout) used for SlideQueue.
+#   With a FlowLayout, slides will automatically go to a new line when 
+#   reaching the width of the window.
+#
+#   Please note that the majority of the code contained in this file is 
+#   adapted from an example provided by the Qt Company Ltd.
+#   Please see copyright statement below.
+#
+#   https://doc.qt.io/qtforpython-6/examples/
+#   example_widgets_layouts_flowlayout.html.
+#
+################################################################################
+
 # Copyright (C) 2013 Riverbank Computing Limited.
 # Copyright (C) 2022 The Qt Company Ltd.
 # SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-
-# This is the PySide6 port of the widgets/layouts/flowlayout example from Qt.
 
 from PyQt6.QtCore import *
 from PyQt6.QtWidgets import *

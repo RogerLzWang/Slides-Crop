@@ -198,8 +198,9 @@ class Slide():
             temp_image = image.crop([left, top, right, bottom])
             temp_image.save(temp_path)
 
-# SlideSelection contains information about a selected area on a slide.
 class SlideSelection():
+    # SlideSelection contains information about a selected area on a slide.
+    
     def __init__(self):
         self.center_coordinates = (0, 0)
         self.width = 0
