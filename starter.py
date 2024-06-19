@@ -14,6 +14,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from project import *
+from projectverifier import *
 
 class Starter(QWidget):
     continue_clicked = pyqtSignal(Project)
@@ -227,8 +228,13 @@ class Starter(QWidget):
         if filename:
             if not self._project:
                 self._project = Project()
-            self._project.load_json(filename, self._resolution)
-            self.continue_clicked.emit(self._project)
+            self._project.load_json(filename)
+
+            # Verifying that all paths in the Project exist.
+            verifier = ProjectVerifier(self._project)
+            if verifier.verify():
+                self._project.generate_previews(self._resolution)
+                self.continue_clicked.emit(self._project)
 
     """
     Handler for when the user on the button that changes the program's settings.

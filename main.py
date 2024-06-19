@@ -18,6 +18,8 @@ from PyQt6.QtWidgets import *
 from mainwindow import *
 
 if __name__ == "__main__":
+    QLocale.setDefault(QLocale(QLocale.Language.English))
+    
     # Removing the image size limit.
     QImageReader.setAllocationLimit(0)
 

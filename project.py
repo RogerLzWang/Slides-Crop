@@ -86,11 +86,13 @@ class Project():
         
     """
     Load and initialize the Project from a JSON format file.
+    Note that the previews are not generated in this function, as fake paths 
+    can potentially exist in a JSON file. Use ProjectVerifier to make sure that 
+    the project is safe before proceeding.
     Note that in practice, the project file always have SCP extensions.
     @param path: str, the path to the project file.
-    @param resolution: float, the resolution of the preview file generated.
     """
-    def load_json(self, path, resolution):
+    def load_json(self, path):
         self.path = path
         self.saved = True
         self.slides = []
@@ -118,8 +120,15 @@ class Project():
                 temp_selection.height = selection["height"]
                 temp_slide.selections.append(temp_selection)
 
-            temp_slide.generate_previews(resolution)
             self.slides.append(temp_slide)
+
+    """
+    Generate previews for all the slides in the Project.
+    @param resolution: float, the resolution of the preview file generated.
+    """
+    def generate_previews(self, resolution):
+        for slide in self.slides:
+            slide.generate_preview(resolution)
 
 class Slide():
     # Each Slide corresponds to an image of a slide.
@@ -138,8 +147,6 @@ class Slide():
 
         # Path of the temporary preview file.
         self.preview = None
-
-        self.generate_previews(resolution)
 
     """
     Check if any selection will be over the boundary of the slide for an 
@@ -192,7 +199,7 @@ class Slide():
     Generate a preview temp file and store its path with the given resolution.
     @param resolution: float, the resolution of the preview files generated.
     """
-    def generate_previews(self, resolution):
+    def generate_preview(self, resolution):
         original = Image.open(self.path)
         self.width, self.height = original.size
 
@@ -206,6 +213,8 @@ class Slide():
             self.preview = tempfile.NamedTemporaryFile()
             # Saving the preview images in the temporary files.
             preview.save(self.preview, format = "PNG")
+        
+        original.close()
 
     """
     Get a list of the names of the cropped image files for this Slide.
