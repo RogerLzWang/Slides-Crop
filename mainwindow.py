@@ -124,6 +124,8 @@ class MainWindow(QMainWindow):
         else:
             self._step_2.set_color(self._color)
             self._step_2.set_resolution(self._resolution)
+            self._step_2.set_selection_size(self._project.width, \
+                                            self._project.height)
             self._step_2.update()
         self._central_widget.setCurrentWidget(self._step_2)
 

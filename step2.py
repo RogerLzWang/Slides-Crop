@@ -60,6 +60,15 @@ class Step2(QWidget):
         self._resolution = resolution
 
     """
+    Set the selection size.
+    @param width: int, the width of the selection.
+    @param height: int, the height of the selection.
+    """
+    def set_selection_size(self, width, height):
+        self._selection_width = width
+        self._selection_height = height
+
+    """
     Return a QVBoxLayout that is the layout for step 2.
     @param index: int, the index of the current working slide.
     @return QLayout, the requeted layout.
@@ -241,10 +250,8 @@ class Step2(QWidget):
     Step2 to ensure the accuracy of the information displayed.
     """
     def update(self):
-        self._selection_width = self._project.width
-        self._selection_height = self._project.height
-        self._slide_viewer.set_selection_size(self._project.width, \
-                                              self._project.height)
+        self._slide_viewer.set_selection_size(self._selection_width, \
+                                              self._selection_height)
         self._slide_viewer.set_color(self._color)
         self._slide_viewer.set_resolution(self._resolution)
         self._header.update_title()
