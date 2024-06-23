@@ -9,6 +9,8 @@
 #
 ################################################################################
 
+import darkdetect
+import os
 import sys
 
 from PyQt6.QtCore import *
@@ -16,6 +18,8 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from mainwindow import *
+
+BASEDIR = os.path.dirname(__file__)
 
 if __name__ == "__main__":
     QLocale.setDefault(QLocale(QLocale.Language.English))
@@ -31,6 +35,33 @@ if __name__ == "__main__":
     icon = QIcon("Slides Crop.icns")
     app.setWindowIcon(icon)
 
+    # Using darkdetect to check if the system is currently in dark mode.
+    if darkdetect.isDark():
+        stylesheet_file = os.path.join(BASEDIR, "qss", "style_dark.qss")
+        chevron_down_path = os.path.join(BASEDIR, "svg", "dark", \
+                                         "chevron-down.svg")
+        chevron_up_path = os.path.join(BASEDIR, "svg", "dark", \
+                                       "chevron-up.svg")
+    else:
+        stylesheet_file = os.path.join(BASEDIR, "qss", "style.qss")
+        chevron_down_path = os.path.join(BASEDIR, "svg", \
+                                         "chevron-down.svg")
+        chevron_up_path = os.path.join(BASEDIR, "svg", \
+                                       "chevron-up.svg") 
+
+    # Setting stylesheet.
+    with open(stylesheet_file, "r") as stylesheet:
+        stylesheet_str = stylesheet.read()
+
+        # Since QSS is incompatible with adding relative paths, we replace the 
+        # paths for all images loaded in the QSS here.
+        stylesheet_str = stylesheet_str.replace("QSSPATH_CHEVRONUP", \
+                                                chevron_up_path)
+        stylesheet_str = stylesheet_str.replace("QSSPATH_CHEVRONDOWN", \
+                                                chevron_down_path)
+        app.setStyleSheet(stylesheet_str)
+    
     window = MainWindow()
     window.show()
+
     sys.exit(app.exec())

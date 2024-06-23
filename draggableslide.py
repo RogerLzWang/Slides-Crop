@@ -74,6 +74,12 @@ class DraggableSlide(QWidget):
     ############################################################################
     # The following section contains overridden functions to customize features.
     ############################################################################
+
+    def enterEvent(self, event):
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
+
+    def leaveEvent(self, event):
+        self.setCursor(Qt.CursorShape.ArrowCursor)
     
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -91,7 +97,7 @@ class DraggableSlide(QWidget):
 
     def mouseReleaseEvent(self, event):
         # Upon release, reorder may have happened due to dragged slides.
-        self.setCursor(Qt.CursorShape.ArrowCursor)
+        self.setCursor(Qt.CursorShape.OpenHandCursor)
         self.drag_start_pos = None
 
         parent_layout = self.parent().layout()

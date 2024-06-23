@@ -90,6 +90,13 @@ class SlideViewer(QGraphicsView):
                 self.viewport().setCursor(Qt.CursorShape.CrossCursor)
 
     """
+    Sets the color for the SlideSelection displays
+    @param color: QColor object.
+    """
+    def set_color(self, color):
+        self._color = color
+
+    """
     Sets the resolution of the preview images provided.
     The resolution is then transformed to _coordinates_transform, a factor 
     multiplied when transforming coordinates for easier calculations.
@@ -297,7 +304,7 @@ class SlideViewer(QGraphicsView):
             selection.height = self._selection_height
 
             # Drawing the selection and adding it to the list.
-            self.draw_selection(selection, len(self._selections))
+            self.draw_selection(selection, len(self._selections) + 1)
             self._selections.append(selection)
 
             self.project_edited.emit()

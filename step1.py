@@ -9,12 +9,17 @@
 #
 ################################################################################
 
+import darkdetect
+import os
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from stepheader import *
 from slidequeue import *
+
+BASEDIR = os.path.dirname(__file__)
 
 class Step1(QWidget):
     continue_clicked = pyqtSignal()
@@ -37,7 +42,14 @@ class Step1(QWidget):
     """
     def get_project(self):
         return self._project
-    
+        
+    """
+    Set the resolution used to generate the Slides' previews.
+    @param resolution: float, the resolution of the Slides' previews.
+    """
+    def set_resolution(self, resolution):
+        self._resolution = resolution
+
     """
     Update the project title and the slides.
     Note that this function is always called by MainWindow when returning to 
@@ -59,10 +71,15 @@ class Step1(QWidget):
         main_layout = self._get_step_1_main()
         footer_layout = self._get_step_1_footer()
 
+        main = QWidget()
+        main.setLayout(main_layout)
+        footer = QWidget()
+        footer.setLayout(footer_layout)
+
         layout = QVBoxLayout()
         layout.addWidget(self._header)
-        layout.addLayout(main_layout)
-        layout.addLayout(footer_layout)
+        layout.addWidget(main)
+        layout.addWidget(footer)
 
         return layout
 
@@ -75,7 +92,13 @@ class Step1(QWidget):
         self._slide_queue.project_edited.connect(self.project_edited_emit)
         self._slide_queue.add_slides(self._project.slides)
 
-        add_button = QPushButton(text = "Add Slides")
+        add_button = QPushButton(text = " Add Slides")
+        if darkdetect.isDark():
+            add_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
+                                                  "plus.svg")))
+        else:
+            add_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "plus.svg")))
+            add_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         add_button.clicked.connect(self.add_button_clicked)
 
         add_layout = QHBoxLayout()
@@ -95,6 +118,7 @@ class Step1(QWidget):
     """
     def _get_step_1_footer(self):
         continue_button = QPushButton(text = "Next")
+        continue_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         continue_button.clicked.connect(self.continue_button_clicked)
 
         footer_layout = QHBoxLayout()
@@ -115,7 +139,8 @@ class Step1(QWidget):
         if filenames:
             slides = []
             for filename in filenames:
-                slides.append(Slide(filename, self._resolution))
+                slides.append(Slide(filename))
+                slides[-1].generate_preview(self._resolution)
             self._slide_queue.add_slides(slides)
             self._project.slides += slides
             self.project_edited.emit()

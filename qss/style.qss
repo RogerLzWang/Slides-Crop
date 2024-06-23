@@ -1,0 +1,118 @@
+* {
+    font-family: "Arial";
+}
+
+QLabel#TitleLabel {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+QFrame#Line {
+    background-color: black;
+}
+
+QLineEdit {
+    border-radius: 4px;
+    padding: 4px;
+}
+
+QPushButton {
+    border-radius: 6px;
+    padding: 6px 10px 6px;
+    background-color: #FBFBFB;
+}
+
+QPushButton:hover {
+    background-color: #E6E6E6;
+}
+
+QPushButton:pressed {
+    background-color: #D9D9D9;
+}
+
+QPushButton:default {
+    background-color: #0A2972;
+    color: #FBFBFB;
+}
+
+QPushButton:default:hover {
+    background-color: #0D3899;
+}
+
+QPushButton:default:pressed {
+    background-color: #124ACC;
+}
+
+QPushButton#LogoButton {
+    background-color: none;
+}
+
+QSpinBox {
+    padding: 4px;
+	border-radius: 4px;
+}
+
+QSpinBox::up-button {
+    width: 20px;
+    background-color: #F2F2F2;
+	border-top-right-radius: 4px;
+    image: url(QSSPATH_CHEVRONUP);
+}
+
+QSpinBox::down-button {
+    width: 20px;
+    background-color: #F2F2F2;
+	border-bottom-right-radius: 4px;
+    image: url(QSSPATH_CHEVRONDOWN);
+}
+
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+	background-color: #E6E6E6;
+}
+
+QSpinBox::up-button:pressed, QSpinBox::down-button:pressed {
+	background-color: #D9D9D9;
+}
+
+QStackedWidget {
+    background-color: #D4D4D4;
+}
+
+QToolButton {
+    font-size: 12pt;
+    border-radius: 6px;
+    padding: 4px 14px 4px 8px;
+    background-color: #FBFBFB;
+}
+
+QToolButton:hover {
+    background-color: #E6E6E6;
+}
+
+QToolButton:pressed {
+    background-color: #D9D9D9;
+}
+
+QToolButton::menu-button {
+    border-left: 1px solid #D4D4D4;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    background-color: #FBFBFB;
+    width: 12px;
+    padding: 2px;
+}
+
+QToolButton::menu-button:hover {
+    background-color: #E6E6E6;
+}
+
+QToolButton::menu-button:pressed {
+    background-color: #D9D9D9;
+}
+
+QToolButton::menu-arrow {
+    top: 1px;
+    left: 1px;
+    width: 10px;
+    image: url(QSSPATH_CHEVRONDOWN);
+}

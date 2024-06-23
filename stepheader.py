@@ -12,9 +12,14 @@
 #
 ################################################################################
 
+import darkdetect
+import os
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+
+BASEDIR = os.path.dirname(__file__)
 
 class StepHeader(QWidget):
     project_edited = pyqtSignal()
@@ -22,6 +27,8 @@ class StepHeader(QWidget):
 
     def __init__(self, parent, project, step):
         super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, \
+                           QSizePolicy.Policy.Fixed)
         self._project = project
         self._step = step
         self._layout = self._get_step_header()
@@ -40,16 +47,47 @@ class StepHeader(QWidget):
     """
     def _get_step_header(self):
         # Creating all necessary QWidgets.
-        return_button = QPushButton(text = "<")
+        return_button = QPushButton()
+        return_button.setObjectName("ReturnButton")
+        if darkdetect.isDark():
+            return_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
+                                                     "box-arrow-left.svg")))
+        else:
+            return_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
+                                                     "box-arrow-left.svg")))
+        return_button.setFixedSize(40, 50)
+        return_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         return_button.clicked.connect(self.return_button_clicked)
         self.title_label = QLabel()
+        self.title_label.setObjectName("TitleLabel")
         self.update_title()
         subtitle_label = QLabel()
-        settings_button = QPushButton(text = "Settings")
+        settings_button = QPushButton()
+        if darkdetect.isDark():
+            settings_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
+                                                       "gear.svg")))
+        else:
+            settings_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
+                                                       "gear.svg")))
+        settings_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         settings_button.clicked.connect(self.settings_button_clicked)
-        save_button = QPushButton(text = "Save")
+        save_button = QPushButton(text = " Save")
+        if darkdetect.isDark():
+            save_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
+                                                   "floppy.svg")))
+        else:
+            save_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
+                                                   "floppy.svg")))
+        save_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         save_button.clicked.connect(self.save_button_clicked)
-        saveas_button = QPushButton(text = "Save As")
+        saveas_button = QPushButton(text = " Save As")
+        if darkdetect.isDark():
+            saveas_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
+                                                     "floppy.svg")))
+        else:
+            saveas_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
+                                                     "floppy.svg")))
+        saveas_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         saveas_button.clicked.connect(self.saveas_button_clicked)
 
         # The text on the subtitle changes based on the current step.
@@ -60,8 +98,12 @@ class StepHeader(QWidget):
 
         # Creating layouts.
         header_title_layout = QVBoxLayout()
+        header_title_layout.setSpacing(5)
+        header_title_layout.setContentsMargins(0, 0, 0, 0)
+        header_title_layout.addStretch()
         header_title_layout.addWidget(self.title_label)
         header_title_layout.addWidget(subtitle_label)
+        header_title_layout.addStretch()
 
         header_layout = QHBoxLayout()
         header_layout.addWidget(return_button)
@@ -149,10 +191,15 @@ class ProjectEditDialog(QDialog):
 
         name_label = QLabel(text = "Project Name: ")
         self.name_lineedit = QLineEdit()
+        self.name_lineedit.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.name_lineedit.setText(self._project.name)
 
         index_label = QLabel(text = "Selections Per Slide: ")
         self.index_spinbox = QSpinBox()
+        self.index_spinbox.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.index_spinbox.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.index_spinbox.setMinimum(1)
         self.index_spinbox.setMaximum(128)
         self.index_spinbox.setValue(self._project.selection)
@@ -160,6 +207,8 @@ class ProjectEditDialog(QDialog):
         size_label_1 = QLabel(text = "Default Selection Size: ")
 
         self.width_lineedit = QLineEdit()
+        self.width_lineedit.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.width_lineedit.setFixedWidth(60)
         self.width_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.width_lineedit.setValidator(QIntValidator(2, 100000))
@@ -168,6 +217,8 @@ class ProjectEditDialog(QDialog):
         size_label_2 = QLabel(text = "px  x")
 
         self.height_lineedit = QLineEdit()
+        self.height_lineedit.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.height_lineedit.setFixedWidth(60)
         self.height_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.height_lineedit.setValidator(QIntValidator(2, 100000))
@@ -176,8 +227,10 @@ class ProjectEditDialog(QDialog):
         size_label_3 = QLabel(text = "px")
         
         apply_button = QPushButton(text = "Apply")
+        apply_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         apply_button.clicked.connect(self.accept)
         cancel_button = QPushButton(text = "Cancel")
+        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_button.clicked.connect(self.reject)
 
         name_layout = QHBoxLayout()
@@ -242,10 +295,13 @@ class ReturnSaveDialog(QDialog):
                        "Would you like to save the project before returning?")
 
         save_button = QPushButton(text = "Save")
+        save_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         save_button.clicked.connect(self.save_clicked)
         nosave_button = QPushButton(text = "Don't Save")
+        nosave_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         nosave_button.clicked.connect(self.accept)
         cancel_button = QPushButton(text = "Cancel")
+        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_button.clicked.connect(self.reject)
 
         label_layout = QHBoxLayout()

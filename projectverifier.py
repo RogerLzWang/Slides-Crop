@@ -214,10 +214,13 @@ class UnfoundItemActionDialog(QDialog):
         label = QLabel(text = text)
 
         locate_button = QPushButton(text = "Locate")
+        locate_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         locate_button.clicked.connect(self._locate_clicked_handler)
         remove_button = QPushButton(text = "Remove")
+        remove_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         remove_button.clicked.connect(self._remove_clicked_handler)
         cancel_button = QPushButton(text = "Cancel")
+        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_button.clicked.connect(self.reject)
 
         label_layout = QHBoxLayout()

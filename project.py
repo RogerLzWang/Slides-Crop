@@ -133,7 +133,7 @@ class Project():
 class Slide():
     # Each Slide corresponds to an image of a slide.
 
-    def __init__(self, slide_path, resolution = 0.5):
+    def __init__(self, slide_path):
         self.file_name = os.path.basename(slide_path)
 
         self.path = slide_path

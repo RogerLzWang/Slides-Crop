@@ -9,12 +9,17 @@
 #
 ################################################################################
 
+import darkdetect
+import os
+
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from slideviewer import *
 from stepheader import *
+
+BASEDIR = os.path.dirname(__file__)
 
 class Step2(QWidget):
     back_clicked = pyqtSignal()
@@ -41,6 +46,20 @@ class Step2(QWidget):
         return self._project
 
     """
+    Set the color used for displaying selecitons.
+    @param color: QColor object.
+    """
+    def set_color(self, color):
+        self._color = color
+    
+    """
+    Set the resolution used to generate the Slides' previews.
+    @param resolution: float, the resolution of the Slides' previews.
+    """
+    def set_resolution(self, resolution):
+        self._resolution = resolution
+
+    """
     Return a QVBoxLayout that is the layout for step 2.
     @param index: int, the index of the current working slide.
     @return QLayout, the requeted layout.
@@ -52,10 +71,15 @@ class Step2(QWidget):
         main_layout = self._get_step_2_main(index)
         footer_layout = self._get_step_2_footer(index)
 
+        main = QWidget()
+        main.setLayout(main_layout)
+        footer = QWidget()
+        footer.setLayout(footer_layout)
+
         layout = QVBoxLayout()
         layout.addWidget(self._header)
-        layout.addLayout(main_layout)
-        layout.addLayout(footer_layout)
+        layout.addWidget(main)
+        layout.addWidget(footer)
 
         return layout
 
@@ -70,28 +94,40 @@ class Step2(QWidget):
         self._slide_viewer.set_selection_size(self._project.width, \
                                               self._project.height)
         self._image_index_label = QLabel()
+        self._image_index_label.setObjectName("TitleLabel")
         self._image_title_label = QLabel()
         self._image_size_label = QLabel()
         self._image_selection_label = QLabel()
         self._image_selection_size_label = QLabel()
         image_selection_size_button = QPushButton(text = "Edit")
+        image_selection_size_button.setCursor(\
+            QCursor(Qt.CursorShape.PointingHandCursor))
         image_selection_size_button.clicked.connect(\
             self._image_selection_size_button_clicked)
 
         main_selection_size_layout = QHBoxLayout()
         main_selection_size_layout.addWidget(self._image_selection_size_label)
         main_selection_size_layout.addWidget(image_selection_size_button)
+        main_selection_size_layout.addStretch()
 
         main_sublayout = QVBoxLayout()
         main_sublayout.addWidget(self._image_index_label)
+        main_sublayout.addSpacing(10)
         main_sublayout.addWidget(self._image_title_label)
+        main_sublayout.addSpacing(10)
         main_sublayout.addWidget(self._image_size_label)
+        main_sublayout.addSpacing(10)
         main_sublayout.addWidget(self._image_selection_label)
         main_sublayout.addLayout(main_selection_size_layout)
+        main_sublayout.addStretch()
+
+        main_sublayout_widget = QWidget()
+        main_sublayout_widget.setFixedWidth(300)
+        main_sublayout_widget.setLayout(main_sublayout)
 
         main_layout = QHBoxLayout()
         main_layout.addWidget(self._slide_viewer)
-        main_layout.addLayout(main_sublayout)
+        main_layout.addWidget(main_sublayout_widget)
 
         self._update_step_2_main(index)
         self._slide_viewer.project_edited.connect(self.project_edited_handler)
@@ -121,9 +157,25 @@ class Step2(QWidget):
     """
     def _get_step_2_footer(self, index):
         back_button = QPushButton(text = "Back")
+        back_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         back_button.clicked.connect(self._back_button_clicked)
-        self.previous_button = QPushButton(text = "<")
-        self.next_button = QPushButton(text = ">")
+        self.previous_button = QPushButton()
+        if darkdetect.isDark():
+            self.previous_button.setIcon(QIcon(\
+                os.path.join(BASEDIR, "svg", "dark", "arrow-left-circle.svg")))
+        else:
+            self.previous_button.setIcon(QIcon(\
+                os.path.join(BASEDIR, "svg", "arrow-left-circle.svg")))
+        self.previous_button.setCursor(\
+            QCursor(Qt.CursorShape.PointingHandCursor))
+        self.next_button = QPushButton()
+        if darkdetect.isDark():
+            self.next_button.setIcon(QIcon(
+                os.path.join(BASEDIR, "svg", "dark", "arrow-right-circle.svg")))
+        else:
+            self.next_button.setIcon(QIcon(\
+                os.path.join(BASEDIR, "svg", "arrow-right-circle.svg")))
+        self.next_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         export_button = ExportToolButton()
         export_button.clicked.connect(self.export)
         export_button.export_all.connect(self.export_all)
@@ -152,12 +204,36 @@ class Step2(QWidget):
         # Disabling buttons if necessary.
         if index == 1:
             self.previous_button.setEnabled(False)
+            if darkdetect.isDark():
+                self.previous_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "dark", "arrow-left-circle-disabled.svg")))
+            else:
+                self.previous_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "arrow-left-circle-disabled.svg")))
         else:
             self.previous_button.setEnabled(True)
+            if darkdetect.isDark():
+                self.previous_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "dark", "arrow-left-circle.svg")))
+            else:
+                self.previous_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "arrow-left-circle.svg")))
         if index == len(self._project.slides):
             self.next_button.setEnabled(False)
+            if darkdetect.isDark():
+                self.next_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "dark", "arrow-right-circle-disabled.svg")))
+            else:
+                self.next_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "arrow-right-circle-disabled.svg")))
         else:
             self.next_button.setEnabled(True)
+            if darkdetect.isDark():
+                self.next_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "dark", "arrow-right-circle.svg")))
+            else:
+                self.next_button.setIcon(QIcon(os.path.join(\
+                    BASEDIR, "svg", "arrow-right-circle.svg")))
     
     """
     Update the project title and the layouts for the main and footer sections.
@@ -165,6 +241,12 @@ class Step2(QWidget):
     Step2 to ensure the accuracy of the information displayed.
     """
     def update(self):
+        self._selection_width = self._project.width
+        self._selection_height = self._project.height
+        self._slide_viewer.set_selection_size(self._project.width, \
+                                              self._project.height)
+        self._slide_viewer.set_color(self._color)
+        self._slide_viewer.set_resolution(self._resolution)
         self._header.update_title()
         self._update_step_2_main(self._project.work_index)
         self._update_step_2_footer(self._project.work_index)
@@ -297,6 +379,8 @@ class SelectionSizeDialog(QDialog):
         self.setWindowTitle("Selection Size")
 
         self.width_lineedit = QLineEdit()
+        self.width_lineedit.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.width_lineedit.setFixedWidth(60)
         self.width_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.width_lineedit.setValidator(QIntValidator(2, 100000))
@@ -305,6 +389,8 @@ class SelectionSizeDialog(QDialog):
         label_1 = QLabel(text = "px  x")
 
         self.height_lineedit = QLineEdit()
+        self.height_lineedit.setContextMenuPolicy(\
+            Qt.ContextMenuPolicy.NoContextMenu)
         self.height_lineedit.setFixedWidth(60)
         self.height_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
         self.height_lineedit.setValidator(QIntValidator(2, 100000))
@@ -313,11 +399,14 @@ class SelectionSizeDialog(QDialog):
         label_2 = QLabel(text = "px")
         
         cancel_button = QPushButton(text = "Cancel")
+        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_button.clicked.connect(self.reject)
         apply_button = QPushButton(text = "Apply")
+        apply_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         apply_button.clicked.connect(self.apply_clicked_handler)
         apply_button.setDefault(True)
         applyall_button = QPushButton(text = "Apply to All")
+        applyall_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         applyall_button.clicked.connect(self.applyall_clicked_handler)
 
         size_layout = QHBoxLayout()
@@ -338,6 +427,7 @@ class SelectionSizeDialog(QDialog):
         layout.addLayout(size_layout)
         layout.addStretch()
         layout.addLayout(button_layout)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
 
         self.setLayout(layout)
 
@@ -364,8 +454,15 @@ class ExportToolButton(QToolButton):
 
     def __init__(self):
         super().__init__()
-        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
-        self.setText("Export")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+        if darkdetect.isDark():
+            self.setIcon(QIcon(\
+                os.path.join(BASEDIR, "svg", "dark", "download.svg")))
+        else:
+            self.setIcon(QIcon(os.path.join(BASEDIR, "svg", "download.svg")))
+        self.setText(" Export")
+        self.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
 
         export_all_action = QAction("Export All", self)

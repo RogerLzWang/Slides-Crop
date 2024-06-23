@@ -95,6 +95,8 @@ class MainWindow(QMainWindow):
             self._step_1.continue_clicked.connect(self.goto_step_2)
             self._step_1.returned.connect(self.goto_starter)
             self._central_widget.addWidget(self._step_1)
+        else:
+            self._step_1.set_resolution(self._resolution)
         self._step_1.update()
         self._central_widget.setCurrentWidget(self._step_1)
 
@@ -118,6 +120,8 @@ class MainWindow(QMainWindow):
             self._step_2.returned.connect(self.goto_starter)
             self._central_widget.addWidget(self._step_2)
         else:
+            self._step_2.set_color(self._color)
+            self._step_2.set_resolution(self._resolution)
             self._step_2.update()
         self._central_widget.setCurrentWidget(self._step_2)
 
@@ -160,10 +164,13 @@ class CloseSaveDialog(QDialog):
                        "Would you like to save the project before closing?")
 
         save_button = QPushButton(text = "Save")
+        save_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         save_button.clicked.connect(self.save_clicked)
         nosave_button = QPushButton(text = "Don't Save")
+        nosave_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         nosave_button.clicked.connect(self.accept)
         cancel_button = QPushButton(text = "Cancel")
+        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         cancel_button.clicked.connect(self.reject)
 
         label_layout = QHBoxLayout()
@@ -181,6 +188,7 @@ class CloseSaveDialog(QDialog):
         layout.addLayout(label_layout)
         layout.addStretch()
         layout.addLayout(button_layout)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
 
         self.setLayout(layout)
 
@@ -226,6 +234,7 @@ class NoSlideErrorDialog(QDialog):
                        "Please add at least one slide before proceeding!")
 
         ok_button = QPushButton(text = "Ok")
+        ok_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         ok_button.clicked.connect(self.accept)
         label_layout = QHBoxLayout()
         label_layout.addWidget(label)
@@ -240,5 +249,6 @@ class NoSlideErrorDialog(QDialog):
         layout.addLayout(label_layout)
         layout.addStretch()
         layout.addLayout(button_layout)
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
 
         self.setLayout(layout)
