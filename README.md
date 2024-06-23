@@ -25,7 +25,7 @@ Welcome to Slides Crop! This is an image cropping application with a friendly GU
 This application is created in the Jonathan A. Epstein Lab at the University of Pennsylvania. Visit our [X page](https://x.com/jonepsteinlab) or the [website of our principal investigator](https://www.med.upenn.edu/apps/faculty/index.php/g275/p12834)!
 
 ## 2. Quick Start
-This is a quick start guide for using the application. Proceed to [section 3](#3.-Download-and-Installation) and [section 4](#4.-Tutorial) for a more detailed run-through of the application.
+This is a quick start guide for using the application. Proceed to [section 3](#3-download-and-installation) and [section 4](#4-tutorial) for a more detailed run-through of the application.
 
 1. Download your operating system's executable from the [release page](https://github.com/RogerLzWang/Slides-Crop/releases).
 1. Run the executable.
