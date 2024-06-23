@@ -104,7 +104,7 @@ The user can click and drag on a selection area in View Mode to move it. The use
 ## 5. Acknowledgments
 The author is a research intern at the [Jonathan A. Epstein Lab](https://x.com/JonEpsteinLab) at the University of Pennsylvania. The work is instructed, supervised, and advised by [Diana Fulmer, PhD](https://dianafulmer.com), a postdoctoral researcher in the lab. Thanks to everyone in the Epstein Lab for making this application possible!
 
-This application is made using Python3 and PyQt6. Pillow is used for image processing, and darkdetect is used to simplify the styling process. Internet sources are consulted and credits are given in the source code where appropriate.
+This application is made using Python3 and PyQt6. Pillow is used for image processing, and darkdetect is used to simplify the styling process. Bootstrap icons are used while building the graphical user interface. Internet sources are consulted and credits are given in the source code where appropriate.
 
 ## TODOs for Developers:
 1. Progress bar for loading a slide (and generating previews).
