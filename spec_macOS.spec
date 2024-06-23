@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['Slides Crop.icns'],
+    icon=['icon/Slides Crop.icns'],
 )
 coll = COLLECT(
     exe,
@@ -46,6 +46,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='Slides Crop.app',
-    icon='Slides Crop.icns',
+    icon='icon/Slides Crop.icns',
     bundle_identifier=None,
 )

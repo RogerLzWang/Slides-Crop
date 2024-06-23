@@ -32,7 +32,10 @@ if __name__ == "__main__":
     app.setApplicationDisplayName("Slides Crop")
     app.setApplicationVersion("1.0.0")
     app.setOrganizationName("Jonathan A. Epstein Lab")
-    icon = QIcon("Slides Crop.icns")
+    if os.name == "Darwin":
+        icon = QIcon(os.path.join(BASEDIR, "icon", "Slides Crop.icns"))
+    else:
+        icon = QIcon(os.path.join(BASEDIR, "icon", "Slides Crop.ico"))
     app.setWindowIcon(icon)
 
     # Using darkdetect to check if the system is currently in dark mode.

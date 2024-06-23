@@ -126,7 +126,8 @@ class SlideViewer(QGraphicsView):
             # If 100% is used as the resolution, no preview has been generated.
             pixmap = QPixmap(self._slide.path)
         else:
-            pixmap = QPixmap(self._slide.preview.name)
+            pixmap = QPixmap(self._slide.preview.name, format = "PNG")
+
         self.set_photo(pixmap)
         self.set_selections(self._slide.selections)
 

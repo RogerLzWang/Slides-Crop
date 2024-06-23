@@ -79,7 +79,7 @@ QStackedWidget {
 }
 
 QToolButton {
-    font-size: 12pt;
+    font-size: 12px;
     border-radius: 6px;
     padding: 4px 14px 4px 8px;
     background-color: #171717;

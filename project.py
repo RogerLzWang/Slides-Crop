@@ -41,6 +41,15 @@ class Project():
         self.height = 0
 
     """
+    Deletes all the temporary preview files generated.
+    This function has to be executed when a project is closed!
+    """
+    def delete_temp(self):
+        for slide in self.slides:
+            if slide.preview:
+                os.unlink(slide.preview.name)
+
+    """
     Save the project into a JSON format file.
     Note that in practice, the project file always have SCP extensions.
     @param path: str, the path to the project file.
@@ -210,9 +219,15 @@ class Slide():
             # Resizing the image.
             preview = original.resize(preview_size)
             # Creating temporary files to store the preview images.
-            self.preview = tempfile.NamedTemporaryFile()
+            # Sadly, NamedTemporaryFile opens the file automatically, but 
+            # non-Unix OSes can't read a temporary file while it's opened.
+            # Adding the delete flag here is thus necessary, but then the file 
+            # needs to be deleted manually.
+            self.preview = tempfile.NamedTemporaryFile(suffix = ".png", \
+                                                       delete = False)
             # Saving the preview images in the temporary files.
             preview.save(self.preview, format = "PNG")
+            self.preview.close()
         
         original.close()
 

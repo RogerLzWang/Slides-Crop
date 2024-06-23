@@ -59,7 +59,9 @@ class MainWindow(QMainWindow):
             self._starter.continue_clicked.connect(\
                 self.starter_continue_handler)
             self._central_widget.addWidget(self._starter)
-        self._project = None
+        if self._project:
+            self._project.delete_temp()
+            self._project = None
         self._central_widget.setCurrentWidget(self._starter)
 
         # No project can be open when Starter is showing.
@@ -140,11 +142,15 @@ class MainWindow(QMainWindow):
         if not self._project or self._project.saved:
             # Close the program directly if no project is opened or if no 
             # modifications have been made.
+            if self._project:
+                self._project.delete_temp()
             super().closeEvent(event)
         else:
             # If the project is not saved, prompt a dialog to save.
             close_dialog = CloseSaveDialog(self._project)
             if close_dialog.exec():
+                if self._project:
+                    self._project.delete_temp()
                 super().closeEvent(event)
             else:
                 # The user has selected cancel and the program shouldn't be 
