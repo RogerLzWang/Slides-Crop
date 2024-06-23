@@ -49,6 +49,10 @@ if __name__ == "__main__":
         chevron_up_path = os.path.join(BASEDIR, "svg", \
                                        "chevron-up.svg") 
 
+    # The Windows back slash is never used in QSS.
+    chevron_down_path = chevron_down_path.replace("\\", "/")
+    chevron_up_path = chevron_up_path.replace("\\", "/")
+
     # Setting stylesheet.
     with open(stylesheet_file, "r") as stylesheet:
         stylesheet_str = stylesheet.read()
