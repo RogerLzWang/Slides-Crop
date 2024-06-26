@@ -49,7 +49,7 @@ This is a quick start guide for using the application. Proceed to [section 3](#3
 The easiest way to download and use Slides Crop is to use a packaged executable. Currently, you can find executables for both Windows and macOS in the [release page](https://github.com/RogerLzWang/Slides-Crop/releases).
 
 ### 2. Package from Source
-The authors uses Pyinstaller to package executables. If you would like to package from source, the SPEC files used by Pyinstaller are also provided.
+The author uses Pyinstaller to package executables. If you would like to package from source, the SPEC files used by Pyinstaller are also provided.
 
 Before packaging, install the following dependencies (it is recommended to do so in a virtual environment):
 
