@@ -272,7 +272,8 @@ class Slide():
             try:
                 # Removing any existing file with os is always safer.
                 # In some cases, Pillow will cause even the GUI to freeze.
-                os.remove(temp_path)
+                if os.path.exists(temp_path) and os.path.isfile(temp_path):
+                    os.remove(temp_path)
                 temp_image.save(temp_path)
             except Exception as e:
                 failed.append(os.path.basename(names[i]))
