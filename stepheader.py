@@ -15,6 +15,8 @@
 import darkdetect
 import os
 
+from access import *
+from dialog import *
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -146,6 +148,10 @@ class StepHeader(QWidget):
     """
     def save_button_clicked(self):
         if self._project.path:
+            if Access.check_new_file_write(self._project.path):
+                dialog = PermissionErrorDialog()
+                dialog.exec()
+                return False
             self._project.save_json(self._project.path)
             self.window().setWindowModified(False)
         else:
@@ -160,6 +166,10 @@ class StepHeader(QWidget):
             filter = "SCP File (*.scp)", directory = self._project.name + \
             ".scp")
         if filename:
+            if Access.check_new_file_write(filename):
+                dialog = PermissionErrorDialog()
+                dialog.exec()
+                return False
             self._project.save_json(filename)
             self.window().setWindowModified(False)
 
@@ -177,167 +187,3 @@ class StepHeader(QWidget):
     def project_edited_handler(self):
         self.project_edited.emit()
         self.update_title()
-
-class ProjectEditDialog(QDialog):
-    # The ProjectEditDialog is prompted when the user clicks the "Settings" 
-    # button during Step1 or Step2.
-
-    project_edited = pyqtSignal()
-
-    def __init__(self, project):
-        super().__init__()
-        self.setWindowTitle("Edit Project")
-        self._project = project
-
-        name_label = QLabel(text = "Project Name: ")
-        self.name_lineedit = QLineEdit()
-        self.name_lineedit.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.name_lineedit.setText(self._project.name)
-
-        index_label = QLabel(text = "Selections Per Slide: ")
-        self.index_spinbox = QSpinBox()
-        self.index_spinbox.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.index_spinbox.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.index_spinbox.setMinimum(1)
-        self.index_spinbox.setMaximum(128)
-        self.index_spinbox.setValue(self._project.selection)
-
-        size_label_1 = QLabel(text = "Default Selection Size: ")
-
-        self.width_lineedit = QLineEdit()
-        self.width_lineedit.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.width_lineedit.setFixedWidth(60)
-        self.width_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.width_lineedit.setValidator(QIntValidator(2, 100000))
-        self.width_lineedit.setText(str(self._project.width))
-
-        size_label_2 = QLabel(text = "px  x")
-
-        self.height_lineedit = QLineEdit()
-        self.height_lineedit.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.height_lineedit.setFixedWidth(60)
-        self.height_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.height_lineedit.setValidator(QIntValidator(2, 100000))
-        self.height_lineedit.setText(str(self._project.height))
-
-        size_label_3 = QLabel(text = "px")
-        
-        apply_button = QPushButton(text = "Apply")
-        apply_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        apply_button.clicked.connect(self.accept)
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-
-        name_layout = QHBoxLayout()
-        name_layout.addWidget(name_label)
-        name_layout.addWidget(self.name_lineedit)
-        name_layout.addStretch()
-
-        index_layout = QHBoxLayout()
-        index_layout.addWidget(index_label)
-        index_layout.addWidget(self.index_spinbox)
-        index_layout.addStretch()
-
-        size_layout = QHBoxLayout()
-        size_layout.addWidget(size_label_1)
-        size_layout.addWidget(self.width_lineedit)
-        size_layout.addWidget(size_label_2)
-        size_layout.addWidget(self.height_lineedit)
-        size_layout.addWidget(size_label_3)
-        size_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(apply_button)
-        button_layout.addWidget(cancel_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(name_layout)
-        layout.addLayout(index_layout)
-        layout.addLayout(size_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-
-        self.setLayout(layout)
-
-    ############################################################################
-    # The following section contains overridden functions to customize features.
-    ############################################################################
-
-    def accept(self):
-        # When the dialog is accepted, update all settings in the Project 
-        # before closing.
-        self._project.name = self.name_lineedit.text()
-        self._project.selection = self.index_spinbox.value()
-        self._project.width = int(self.width_lineedit.text())
-        self._project.height = int(self.height_lineedit.text())
-        self.project_edited.emit()
-        super().accept()
-
-class ReturnSaveDialog(QDialog):
-    # The ReturnSaveDialog is prompted when the user clicks the return button 
-    # but unsaved changes are present.
-
-    project_saved = pyqtSignal()
-
-    def __init__(self, project):
-        super().__init__()
-        self.setWindowTitle("Close Project")
-        self._project = project
-
-        label = QLabel(text = \
-                       "Would you like to save the project before returning?")
-
-        save_button = QPushButton(text = "Save")
-        save_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        save_button.clicked.connect(self.save_clicked)
-        nosave_button = QPushButton(text = "Don't Save")
-        nosave_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        nosave_button.clicked.connect(self.accept)
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(label)
-        label_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(save_button)
-        button_layout.addWidget(nosave_button)
-        button_layout.addWidget(cancel_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(label_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-
-        self.setLayout(layout)
-
-    """
-    Handler for when the user clicks "Save".
-    If no path has been set for the project, prompt a QFileDialog to determine 
-    the path of the project.
-    """
-    def save_clicked(self):
-        if self._project.path:
-            self._project.save_json(self._project.path)
-            self.project_saved.emit()
-            self.accept()
-        else:
-            filename, _ = QFileDialog.getSaveFileName(\
-                caption = "Create a project file", \
-                filter = "SCP File (*.scp)", directory = self._project.name + \
-                ".scp")
-            if filename:
-                self._project.save_json(filename)
-                self.project_saved.emit()
-                self.accept()

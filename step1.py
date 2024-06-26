@@ -98,7 +98,7 @@ class Step1(QWidget):
                                                   "plus.svg")))
         else:
             add_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "plus.svg")))
-            add_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        add_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         add_button.clicked.connect(self.add_button_clicked)
 
         add_layout = QHBoxLayout()
@@ -137,13 +137,30 @@ class Step1(QWidget):
             filter = "Images (*.png *.jpg *.jpeg *.tif *.tiff)")
 
         if filenames:
-            slides = []
-            for filename in filenames:
-                slides.append(Slide(filename))
-                slides[-1].generate_preview(self._resolution)
-            self._slide_queue.add_slides(slides)
-            self._project.slides += slides
-            self.project_edited.emit()
+            # Setting up the dialog and the worker thread.
+            dialog = ProgressDialog("Loading", len(filenames))
+
+            thread = QThread()
+            thread.finished.connect(thread.deleteLater)
+            worker = AddWorker(filenames, self._resolution)
+            worker.progress.connect(dialog.update)
+            worker.finished.connect(dialog.accept)
+            worker.finished.connect(thread.quit)
+            worker.finished.connect(worker.deleteLater)
+            worker.moveToThread(thread)
+            thread.started.connect(worker.run)
+            dialog.rejected.connect(thread.exit)
+
+            thread.start()
+
+            if dialog.exec():
+                thread.wait()
+                self._slide_queue.add_slides(worker.slides)
+                self._project.slides += worker.slides
+                self.project_edited.emit()
+            else:
+                # If the thread is killed by the user, wait for it to finish.
+                thread.wait()
 
     """
     Handler for when the user clicks the "Continue" button.
@@ -164,3 +181,35 @@ class Step1(QWidget):
     """
     def returned_handler(self):
         self.returned.emit()
+
+class AddWorker(QObject):
+    # AddWorker is a worker class for adding slides and generating previews.
+    # This step is generally slow on larger images, which is why this task is 
+    # separated to prevent freezing the GUI.
+
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+    
+    def __init__(self, filenames, resolution):
+        super().__init__()
+        self.slides = []
+        self.set_files(filenames)
+        self._resolution = resolution
+    
+    """
+    Set the files to be executed.
+    @param filenames: list, string of paths to files to be processed.
+    """
+    def set_files(self, filenames):
+        self.filenames = filenames
+
+    """
+    Execute the worker.
+    """
+    def run(self):
+        self.slides = []
+        for i in range(len(self.filenames)):
+            self.slides.append(Slide(self.filenames[i]))
+            self.slides[-1].generate_preview(self._resolution)
+            self.progress.emit(i + 1)
+        self.finished.emit()

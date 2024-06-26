@@ -17,6 +17,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from access import *
+from dialog import *
 from project import *
 from starter import *
 from step1 import *
@@ -158,105 +160,3 @@ class MainWindow(QMainWindow):
                 # The user has selected cancel and the program shouldn't be 
                 # closed.
                 event.ignore()
-
-class CloseSaveDialog(QDialog):
-    # This dialog shows when the user clicks on the close button on the window 
-    # but the project has not been saved.
-
-    def __init__(self, project):
-        super().__init__()
-        self._project = project
-        self.setWindowTitle("Close")
-
-        label = QLabel(text = \
-                       "Would you like to save the project before closing?")
-
-        save_button = QPushButton(text = "Save")
-        save_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        save_button.clicked.connect(self.save_clicked)
-        nosave_button = QPushButton(text = "Don't Save")
-        nosave_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        nosave_button.clicked.connect(self.accept)
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(label)
-        label_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(save_button)
-        button_layout.addWidget(nosave_button)
-        button_layout.addWidget(cancel_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(label_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)
-
-    """
-    Handler for when user clicks "Save" on the dialog.
-    This function is necessary as the user might click "Cancel" while the file 
-    dialog shows. In this case, we do not close the application to avoid 
-    unwanted loss of data.
-    """
-    def save_clicked(self):
-        if self.save_project():
-            self.accept()
-
-    """
-    Saving the project. Prompts a file dialog if no path is in the project.
-    @return True (project saved successfully) / False (project not saved).
-    """
-    def save_project(self):
-        if self._project.path:
-            self._project.save_json(self._project.path)
-            self.window().setWindowModified(False)
-            return True
-        else:
-            filename, _ = QFileDialog.getSaveFileName(\
-                caption = "Create a project file", \
-                filter = "SCP File (*.scp)", directory = self._project.name + \
-                ".scp")
-            if filename:
-                self._project.save_json(filename)
-                self.window().setWindowModified(False)
-                return True
-            return False
-        
-class NoSlideErrorDialog(QDialog):
-    # This dialog shows when the user attempts to proceed to Step2 without 
-    # adding any slides.
-    
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Error")
-
-        label = QLabel(text = \
-                       "Please add at least one slide before proceeding!")
-
-        ok_button = QPushButton(text = "Ok")
-        ok_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        ok_button.clicked.connect(self.accept)
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(label)
-        label_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(ok_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(label_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)

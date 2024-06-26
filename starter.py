@@ -11,13 +11,12 @@
 
 import darkdetect
 import os
-import webbrowser
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
-from PyQt6.QtSvgWidgets import *
 
+from dialog import *
 from project import *
 from projectverifier import *
 
@@ -353,8 +352,28 @@ class Starter(QWidget):
             # Verifying that all paths in the Project exist.
             verifier = ProjectVerifier(self._project)
             if verifier.verify():
-                self._project.generate_previews(self._resolution)
-                self.continue_clicked.emit(self._project)
+                # Setting up the dialog and the worker thread.
+                dialog = ProgressDialog("Loading", len(self._project.slides))
+
+                thread = QThread()
+                thread.finished.connect(thread.deleteLater)
+                worker = PreviewWorker(self._project, self._resolution)
+                worker.progress.connect(dialog.update)
+                worker.finished.connect(dialog.accept)
+                worker.finished.connect(thread.quit)
+                worker.finished.connect(worker.deleteLater)
+                worker.moveToThread(thread)
+                thread.started.connect(worker.run)
+                dialog.rejected.connect(thread.exit)
+
+                thread.start()
+
+                if not dialog.exec():
+                    # If the thread is killed, wait for it to finish.
+                    thread.wait()
+                else:
+                    thread.wait()
+                    self.continue_clicked.emit(self._project)
 
     """
     Handler for when the user clicks the button that changes the settings.
@@ -381,275 +400,33 @@ class Starter(QWidget):
         info_dialog = InfoDialog()
         info_dialog.exec()
 
-class SettingsEditDialog(QDialog):
-    settings_changed = pyqtSignal(float, QColor)
 
-    def __init__(self, resolution, color):
-        super().__init__()
-        self.setWindowTitle("Settings")
-        self._color = color
+class PreviewWorker(QObject):
+    # PreviewWorker is a worker class for generating previews.
+    # This step is generally slow on larger images, which is why this task is 
+    # separated to prevent freezing the GUI.
 
-        # Preview resolution section.
-        preview_label = QLabel(text = "Preview At: ")
-        self.preview_100_button = QRadioButton(text = "100%")
-        self.preview_50_button = QRadioButton(text = "50%")
-        self.preview_25_button = QRadioButton(text = "25%")
-        self.preview_10_button = QRadioButton(text = "10%")
-        if resolution == 1:
-            self.preview_100_button.setChecked(True)
-        elif resolution == 0.5:
-            self.preview_50_button.setChecked(True)
-        elif resolution == 0.25:
-            self.preview_25_button.setChecked(True)
-        elif resolution == 0.1:
-            self.preview_10_button.setChecked(True)
-        self.preview_buttongroup = QButtonGroup()
-        self.preview_buttongroup.addButton(self.preview_100_button)
-        self.preview_buttongroup.addButton(self.preview_50_button)
-        self.preview_buttongroup.addButton(self.preview_25_button)
-        self.preview_buttongroup.addButton(self.preview_10_button)
-
-        # Color section.
-        color_label = QLabel(text = "Selection Color: ")
-        self.color_button = QPushButton()
-        self.color_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.color_button.setAutoFillBackground(True)
-        self.color_button.setFixedWidth(50)
-        self.color_button.clicked.connect(self.color_button_clicked)
-        self.color_button.setStyleSheet("background-color: rgb(%d, %d, %d)" \
-                                        %(self._color.red(), \
-                                          self._color.green(), \
-                                          self._color.blue()))
-
-        apply_button = QPushButton(text = "Apply")
-        apply_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        apply_button.clicked.connect(self.accept)
-        apply_button.setDefault(True)
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-
-        preview_layout = QHBoxLayout()
-        preview_layout.addWidget(preview_label)
-        preview_layout.addWidget(self.preview_100_button)
-        preview_layout.addWidget(self.preview_50_button)
-        preview_layout.addWidget(self.preview_25_button)
-        preview_layout.addWidget(self.preview_10_button)
-        preview_layout.addStretch()
-
-        color_layout = QHBoxLayout()
-        color_layout.addWidget(color_label)
-        color_layout.addWidget(self.color_button)
-        color_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(apply_button)
-        button_layout.addWidget(cancel_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(preview_layout)
-        layout.addLayout(color_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)
-
-    """
-    Handler for when the color change button is clicked.
-    """ 
-    def color_button_clicked(self):
-        # Prompts a new dialog that gets the user's customized color.
-        color = QColorDialog.getColor()
-        if color.isValid():
-            self._color = color
-            self.color_button.setStyleSheet("background-color: rgb(%d, %d, %d)"\
-                                            %(self._color.red(), \
-                                            self._color.green(), \
-                                            self._color.blue()))
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
     
-    ############################################################################
-    # The following section contains overridden functions to customize features.
-    ############################################################################
-
-    def accept(self):
-        # New settings are emitted as a signal when the dialog is accepted.
-        if self.preview_100_button.isChecked():
-            self.settings_changed.emit(1, self._color)
-        elif self.preview_50_button.isChecked():
-            self.settings_changed.emit(0.5, self._color)
-        elif self.preview_25_button.isChecked():
-            self.settings_changed.emit(0.25, self._color)
-        elif self.preview_10_button.isChecked():
-            self.settings_changed.emit(0.1, self._color)
-        super().accept()
-    
-class NoNameErrorDialog(QDialog):
-    # This dialog shows when the user attempts to create a Project with no name.
-    
-    def __init__(self):
+    def __init__(self, project, resolution):
         super().__init__()
-        self.setWindowTitle("Error")
-
-        label = QLabel(text = \
-                       "The project's name cannot be empty!")
-
-        ok_button = QPushButton(text = "Ok")
-        ok_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        ok_button.clicked.connect(self.accept)
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(label)
-        label_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(ok_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(label_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)
-
-class InfoDialog(QDialog):
-    # This dialog shows when the user clicks on the information button.
-
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle("About")
-
-        if darkdetect.isDark():
-            logo = QSvgWidget(os.path.join(BASEDIR, "svg", "dark", \
-                                           "slides-crop.svg"))
-        else:
-            logo = QSvgWidget(os.path.join(BASEDIR, "svg", "slides-crop.svg"))
-        logo.setFixedSize(50, 50)
-
-        lab_logo = QPixmap(os.path.join(BASEDIR, "png", "epstein-lab.png"))
-        lab_logo = lab_logo.scaled(50, 50)
-        lab_label = QLabel()
-        lab_label.setPixmap(lab_logo)
-        lab_label.setFixedSize(50, 50)
-
-        title = "Slides Crop"
-        text_1 = "Version: 1.0.0"
-        text_2 = "Originally Published: 2024-06-22"
-        text_3 = "Last Updated: 2024-06-22"
-        text_4 = "Author: Lizhou Roger Wang"
-        text_5 = "Contact: rogerlzwang@gmail.com"
-        text_6 = "Jonathan A. Epstein Lab @ Penn Medicine"
-
-        title = QLabel(text = title)
-        title.setObjectName("TitleLabel")
-        label_1 = QLabel(text = text_1)
-        label_2 = QLabel(text = text_2)
-        label_3 = QLabel(text = text_3)
-        label_4 = QLabel(text = text_4)
-        label_5 = QLabel(text = text_5)
-        label_6 = QLabel(text = text_6)
-
-        line = QFrame()
-        line.setObjectName("Line")
-        line.setFrameShape(QFrame.Shape.HLine)
-        line.setFixedHeight(1)
-
-        # Buttons for hyperlinks.
-        github_button = QPushButton()
-        github_button.setObjectName("LogoButton")
-        github_button.setFixedSize(20, 20)
-        github_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        github_button.clicked.connect(self.github_button_clicked)
-        x_button = QPushButton()
-        x_button.setObjectName("LogoButton")
-        x_button.setFixedSize(20, 20)
-        x_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        x_button.clicked.connect(self.x_button_clicked)
-        x_lab_button = QPushButton()
-        x_lab_button.setObjectName("LogoButton")
-        x_lab_button.setFixedSize(20, 20)
-        x_lab_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        x_lab_button.clicked.connect(self.x_lab_button_clicked)
-        if darkdetect.isDark():
-            github_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
-                                                     "github.svg")))
-            x_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
-                                                "x.svg")))
-            x_lab_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "dark", \
-                                                    "x-lab.svg")))
-        else:
-            github_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
-                                                     "github.svg")))
-            x_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", "x.svg")))
-            x_lab_button.setIcon(QIcon(os.path.join(BASEDIR, "svg", \
-                                                    "x-lab.svg")))
-        github_button.setIconSize(QSize(20, 20))
-        x_button.setIconSize(QSize(20, 20))
-        x_lab_button.setIconSize(QSize(20, 20))
-
-        logo_layout = QHBoxLayout()
-        logo_layout.addStretch()
-        logo_layout.addWidget(logo)
-        logo_layout.addSpacing(10)
-        logo_layout.addWidget(lab_label)
-        logo_layout.addStretch()
-
-        title_layout = QHBoxLayout()
-        title_layout.addStretch()
-        title_layout.addWidget(title)
-        title_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(github_button)
-        button_layout.addSpacing(10)
-        button_layout.addWidget(x_button)
-        button_layout.addSpacing(10)
-        button_layout.addWidget(x_lab_button)
-        button_layout.addStretch()
-        
-
-        layout = QVBoxLayout()
-        layout.addLayout(logo_layout)
-        layout.addSpacing(10)
-        layout.addLayout(title_layout)
-        layout.addSpacing(10)
-        layout.addWidget(label_1)
-        layout.addWidget(label_2)
-        layout.addWidget(label_3)
-        layout.addSpacing(10)
-        layout.addWidget(label_4)
-        layout.addWidget(label_5)
-        layout.addSpacing(10)
-        layout.addWidget(label_6)
-        layout.addSpacing(5)
-        layout.addWidget(line)
-        layout.addSpacing(5)
-        layout.addLayout(button_layout)
-
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)
+        self.slides = []
+        self.set_project(project)
+        self._resolution = resolution
+    
+    """
+    Set the project for which the previews are generated.
+    @param project: Project object, the project to be loaded.
+    """
+    def set_project(self, project):
+        self.project = project
 
     """
-    Handler for when the GitHub button is clicked.
+    Execute the worker.
     """
-    def github_button_clicked(self):
-        webbrowser.open("https://github.com/RogerLzWang")
-
-    """
-    Handler for when the X button is clicked.
-    """
-    def x_button_clicked(self):
-        webbrowser.open("https://x.com/RogerLzWang")
-
-    """
-    Handler for when the X (lab) button is clicked.
-    """
-    def x_lab_button_clicked(self):
-        webbrowser.open("https://x.com/JonEpsteinLab")
+    def run(self):
+        for i in range(len(self.project.slides)):
+            self.project.slides[i].generate_preview(self._resolution)
+            self.progress.emit(i + 1)
+        self.finished.emit()

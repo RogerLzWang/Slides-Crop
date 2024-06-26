@@ -247,8 +247,10 @@ class Slide():
     Save all cropped image selections to a given path.
     NOte that get_crop_names is called in this function.
     @param path: str, the path to the directory for the files to be saved in.
+    @return failed: list, the files that failed to export.
     """
     def save_crops(self, path):
+        failed = []
         names = self.get_crop_names()
         image = Image.open(self.path)
 
@@ -266,7 +268,18 @@ class Slide():
             bottom = y + math.ceil(height / 2)
 
             temp_image = image.crop([left, top, right, bottom])
-            temp_image.save(temp_path)
+
+            try:
+                # Removing any existing file with os is always safer.
+                # In some cases, Pillow will cause even the GUI to freeze.
+                os.remove(temp_path)
+                temp_image.save(temp_path)
+            except Exception as e:
+                failed.append(os.path.basename(names[i]))
+
+        image.close()
+        
+        return failed
 
 class SlideSelection():
     # SlideSelection contains information about a selected area on a slide.

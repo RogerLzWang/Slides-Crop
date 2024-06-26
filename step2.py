@@ -16,6 +16,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from access import *
+from dialog import *
 from slideviewer import *
 from stepheader import *
 
@@ -311,8 +313,38 @@ class Step2(QWidget):
             caption = "Select Output Directory", \
             options = QFileDialog.Option.ShowDirsOnly)
         if directory:
-            self._project.slides[self._project.work_index - 1].\
-                save_crops(directory)
+            # Check if the directory can be written to.
+            if Access.check_dir_write(directory):
+                dialog = ExportDirectoryErrorDialog()
+                dialog.exec()
+                return
+            
+            # Setting up the dialog and the worker thread.
+            dialog = ProgressDialog("Exporting", 1)
+
+            thread = QThread()
+            thread.finished.connect(thread.deleteLater)
+            worker = ExportWorker([self._project.slides[\
+                self._project.work_index - 1]], directory)
+            worker.progress.connect(dialog.update)
+            worker.finished.connect(dialog.accept)
+            worker.finished.connect(thread.quit)
+            worker.finished.connect(worker.deleteLater)
+            worker.moveToThread(thread)
+            thread.started.connect(worker.run)
+            dialog.rejected.connect(thread.exit)
+
+            thread.start()
+            if not dialog.exec():
+                # If the thread is killed by the user, wait for it to finish.
+                thread.wait()
+                return
+
+            thread.wait()
+            failed = worker.get_failed()
+            if failed:
+                dialog = ExportErrorDialog(failed)
+                dialog.exec()
 
     """
     Handler for when the Export All button has been clicked.
@@ -323,8 +355,37 @@ class Step2(QWidget):
             caption = "Select Output Directory", \
             options = QFileDialog.Option.ShowDirsOnly)
         if directory:
-            for i in range(len(self._project.slides)):
-                self._project.slides[i].save_crops(directory)
+            # Check if the directory can be written to.
+            if Access.check_dir_write(directory):
+                dialog = ExportDirectoryErrorDialog()
+                dialog.exec()
+                return
+            
+            # Setting up the dialog and the worker thread.
+            dialog = ProgressDialog("Exporting", len(self._project.slides))
+
+            thread = QThread()
+            thread.finished.connect(thread.deleteLater)
+            worker = ExportWorker(self._project.slides, directory)
+            worker.progress.connect(dialog.update)
+            worker.finished.connect(dialog.accept)
+            worker.finished.connect(thread.quit)
+            worker.finished.connect(worker.deleteLater)
+            worker.moveToThread(thread)
+            thread.started.connect(worker.run)
+            dialog.rejected.connect(thread.exit)
+
+            thread.start()
+            if not dialog.exec():
+                # If the thread is killed by the user, wait for it to finish.
+                thread.wait()
+                return
+            
+            thread.wait()
+            failed = worker.get_failed()
+            if failed:
+                dialog = ExportErrorDialog(failed)
+                dialog.exec()
 
     """
     Handler for when the Back button has been clicked.
@@ -374,86 +435,6 @@ class Step2(QWidget):
     def returned_handler(self):
         self.returned.emit()
 
-class SelectionSizeDialog(QDialog):
-    # The SelectionSizeDialog prompts when the user wishes to change the 
-    # selection size, either for the next selection made or to change the size 
-    # of all previous selections.
-    apply_clicked = pyqtSignal(int, int)
-    applyall_clicked = pyqtSignal(int, int)
-
-    def __init__(self, width, height):
-        super().__init__()
-        self.setWindowTitle("Selection Size")
-
-        self.width_lineedit = QLineEdit()
-        self.width_lineedit.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.width_lineedit.setFixedWidth(60)
-        self.width_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.width_lineedit.setValidator(QIntValidator(2, 100000))
-        self.width_lineedit.setText(str(width))
-
-        label_1 = QLabel(text = "px  x")
-
-        self.height_lineedit = QLineEdit()
-        self.height_lineedit.setContextMenuPolicy(\
-            Qt.ContextMenuPolicy.NoContextMenu)
-        self.height_lineedit.setFixedWidth(60)
-        self.height_lineedit.setAlignment(Qt.AlignmentFlag.AlignRight)
-        self.height_lineedit.setValidator(QIntValidator(2, 100000))
-        self.height_lineedit.setText(str(height))
-
-        label_2 = QLabel(text = "px")
-        
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-        apply_button = QPushButton(text = "Apply")
-        apply_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        apply_button.clicked.connect(self.apply_clicked_handler)
-        apply_button.setDefault(True)
-        applyall_button = QPushButton(text = "Apply to All")
-        applyall_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        applyall_button.clicked.connect(self.applyall_clicked_handler)
-
-        size_layout = QHBoxLayout()
-        size_layout.addWidget(self.width_lineedit)
-        size_layout.addWidget(label_1)
-        size_layout.addWidget(self.height_lineedit)
-        size_layout.addWidget(label_2)
-        size_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(cancel_button)
-        button_layout.addStretch()
-        button_layout.addWidget(apply_button)
-        button_layout.addWidget(applyall_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(size_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-        layout.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
-
-        self.setLayout(layout)
-
-    """
-    Handler for when the user clicks "Apply".
-    """
-    def apply_clicked_handler(self):
-        self.apply_clicked.emit(int(self.width_lineedit.text()), \
-                                int(self.height_lineedit.text()))
-        self.close()
-        
-    """
-    Handler for when the user clicks "Apply All".
-    """
-    def applyall_clicked_handler(self):
-        self.applyall_clicked.emit(int(self.width_lineedit.text()), \
-                                   int(self.height_lineedit.text()))
-        self.close()
-
 class ExportToolButton(QToolButton):
     # The Export button and Export All button is implemented as a QToolButton 
     # in order to achieve the drop-down effect.
@@ -487,3 +468,50 @@ class ExportToolButton(QToolButton):
     """
     def export_all_triggered(self):
         self.export_all.emit()
+
+class ExportWorker(QObject):
+    # ExportWorker is a worker class for exporting slides.
+    # This step is generally slow on larger images, which is why this task is 
+    # separated to prevent freezing the GUI.
+
+    progress = pyqtSignal(int)
+    finished = pyqtSignal()
+    
+    def __init__(self, slides, directory):
+        super().__init__()
+        self.failed = []
+        self.slides = []
+
+        self.set_slides(slides)
+        self.set_directory(directory)
+    
+    """
+    Get the images that failed to export.
+    @return failed: list of str, the names of the images that failed to export.
+    """
+    def get_failed(self):
+        return self.failed
+
+    """
+    Set the slides to be exported.
+    @param slides: list of Slide objects, Slides to be exported.
+    """
+    def set_slides(self, slides):
+        self.slides = slides
+
+    """
+    Set the destination for the export.
+    @param directory: str, the directory for export.
+    """
+    def set_directory(self, directory):
+        self.directory = directory
+
+    """
+    Execute the worker.
+    """
+    def run(self):
+        self.failed = []
+        for i in range(len(self.slides)):
+            self.failed += self.slides[i].save_crops(self.directory)
+            self.progress.emit(i + 1)
+        self.finished.emit()

@@ -107,9 +107,12 @@ The author is a research intern at the [Jonathan A. Epstein Lab](https://x.com/J
 This application is made using Python3 and PyQt6. Pillow is used for image processing, and darkdetect is used to simplify the styling process. Bootstrap icons are used while building the graphical user interface. Internet sources are consulted and credits are given in the source code where appropriate.
 
 ## TODOs for Developers:
-1. Progress bar for loading a slide (and generating previews).
-1. Progress bar for exporting cropped images.
-1. Drop to add slides.
-1. The ability to switch themes without restarting the application.
-1. Asterisk on title bar for modified project in Windows.
-1. Packaged application for Linux.
+ - [x] Progress bar for loading a slide (and generating previews).
+ - [x] Progress bar for exporting cropped images.
+ - [ ] Drop to add slides.
+ - [ ] The ability to switch themes without restarting the application.
+ - [ ] Asterisk on title bar for modified project in Windows.
+ - [ ] Packaged application for Linux.
+ - [ ] Packaging methods for both Intel and Apple Silicon macOS.
+ - [ ] Double check RAM usage: reported crash when user clicks on "Save As".
+ - [ ] Implement safe load of projects: check read permissions and the JSON file before loading.

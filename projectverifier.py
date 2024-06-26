@@ -32,6 +32,7 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from dialog import *
 from project import *
 
 class ProjectVerifier():
@@ -191,66 +192,3 @@ class ProjectVerifier():
         for i in range(len(index_list) - 1, -1, -1):
             self._project.slides.pop(index_list[i])
         
-class UnfoundItemActionDialog(QDialog):
-    # This dialog is prompted when any of the Project's Slides are not found.
-    # The dialog asks the user whether or not the Slides should be relocated, 
-    # removed, or cancel loading the project altogether.
-
-    locate_clicked = pyqtSignal()
-    remove_clicked = pyqtSignal()
-    
-    def __init__(self, unfounds):
-        super().__init__()
-        self.setWindowTitle("Error")
-
-        # Creating the text to be displayed.
-        text = "The following %d slide images are not found:\n" %len(unfounds)
-        for unfound in unfounds:
-            text += unfound
-            text += "\n"
-        text += "Would you like to locate the images or "
-        text += "remove them from the project?"
-
-        label = QLabel(text = text)
-
-        locate_button = QPushButton(text = "Locate")
-        locate_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        locate_button.clicked.connect(self._locate_clicked_handler)
-        remove_button = QPushButton(text = "Remove")
-        remove_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        remove_button.clicked.connect(self._remove_clicked_handler)
-        cancel_button = QPushButton(text = "Cancel")
-        cancel_button.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        cancel_button.clicked.connect(self.reject)
-
-        label_layout = QHBoxLayout()
-        label_layout.addWidget(label)
-        label_layout.addStretch()
-
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(locate_button)
-        button_layout.addWidget(remove_button)
-        button_layout.addWidget(cancel_button)
-
-        layout = QVBoxLayout()
-        layout.addStretch()
-        layout.addLayout(label_layout)
-        layout.addStretch()
-        layout.addLayout(button_layout)
-
-        self.setLayout(layout)
-
-    """
-    Handler for if the user clicks the "Locate" button.
-    """
-    def _locate_clicked_handler(self):
-        self.locate_clicked.emit()
-        self.accept()
-    
-    """
-    Handler for if the user clicks the "Remove" button.
-    """
-    def _remove_clicked_handler(self):
-        self.remove_clicked.emit()
-        self.accept()
