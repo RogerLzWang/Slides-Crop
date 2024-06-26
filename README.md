@@ -116,3 +116,4 @@ This application is made using Python3 and PyQt6. Pillow is used for image proce
  - [ ] Packaging methods for both Intel and Apple Silicon macOS.
  - [ ] Double check RAM usage: reported crash when user clicks on "Save As".
  - [ ] Implement safe load of projects: check read permissions and the JSON file before loading.
+ - [ ] Handle the case when the selection is larger than the image: warn user or export selection in a reasonable way.
