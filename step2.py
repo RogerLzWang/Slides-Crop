@@ -337,9 +337,9 @@ class Step2(QWidget):
             self.export_thread.start()
             if not self.dialog.exec():
                 # If the thread is killed by the user, wait for it to finish.
-                self.export_thread.terminate()
+                self.export_thread.quit()
                 if not self.export_thread.wait(10000):
-                    self.export_thread.terminate()
+                    self.export_thread.quit()
                     self.export_thread.wait(10000)
                 return
             
@@ -383,9 +383,9 @@ class Step2(QWidget):
             self.export_thread.start()
             if not self.dialog.exec():
                 # If the thread is killed by the user, wait for it to finish.
-                self.export_thread.terminate()
+                self.export_thread.quit()
                 if not self.export_thread.wait(10000):
-                    self.export_thread.terminate()
+                    self.export_thread.quit()
                     self.export_thread.wait(10000)
                 return
             

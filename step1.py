@@ -162,9 +162,9 @@ class Step1(QWidget):
                 self.project_edited.emit()
             else:
                 # If the thread is killed by the user, wait for it to finish.
-                self.add_thread.terminate()
+                self.add_thread.quit()
                 if not self.add_thread.wait(10000):
-                    self.add_thread.terminate()
+                    self.add_thread.quit()
                     self.add_thread.wait(10000)
 
     """

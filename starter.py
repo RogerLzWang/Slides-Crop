@@ -371,9 +371,9 @@ class Starter(QWidget):
                 self.preview_thread.start()
                 if not self.dialog.exec():
                     # If the thread is killed, wait for it to finish.
-                    self.preview_thread.terminate()
+                    self.preview_thread.quit()
                     if not self.preview_thread.wait(10000):
-                        self.preview_thread.terminate()
+                        self.preview_thread.quit()
                         self.preview_thread.wait(10000)
                 else:
                     if not self.preview_thread.wait(10000):
