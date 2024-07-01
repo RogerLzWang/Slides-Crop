@@ -122,13 +122,7 @@ class SlideViewer(QGraphicsView):
     """
     def set_slide(self, slide):
         self._slide = slide
-        if self._coordinates_transform == 1:
-            # If 100% is used as the resolution, no preview has been generated.
-            pixmap = QPixmap(self._slide.path)
-        else:
-            pixmap = QPixmap(self._slide.preview.name, format = "PNG")
-
-        self.set_photo(pixmap)
+        self.set_photo(self._slide.preview)
         self.set_selections(self._slide.selections)
 
     """

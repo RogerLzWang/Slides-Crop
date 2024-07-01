@@ -138,29 +138,34 @@ class Step1(QWidget):
 
         if filenames:
             # Setting up the dialog and the worker thread.
-            dialog = ProgressDialog("Loading", len(filenames))
+            self.dialog = ProgressDialog("Loading", len(filenames))
 
-            thread = QThread()
-            thread.finished.connect(thread.deleteLater)
-            worker = AddWorker(filenames, self._resolution)
-            worker.progress.connect(dialog.update)
-            worker.finished.connect(dialog.accept)
-            worker.finished.connect(thread.quit)
-            worker.finished.connect(worker.deleteLater)
-            worker.moveToThread(thread)
-            thread.started.connect(worker.run)
-            dialog.rejected.connect(thread.exit)
+            self.add_thread = QThread()
+            self.add_thread.finished.connect(self.add_thread.deleteLater)
+            self.worker = AddWorker(filenames, self._resolution)
+            self.worker.progress.connect(self.dialog.update)
+            self.worker.finished.connect(self.dialog.accept)
+            self.worker.finished.connect(self.add_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.dialog.rejected.connect(self.worker.stop)
+            self.worker.moveToThread(self.add_thread)
+            self.add_thread.started.connect(self.worker.run)
 
-            thread.start()
+            self.add_thread.start()
 
-            if dialog.exec():
-                thread.wait()
-                self._slide_queue.add_slides(worker.slides)
-                self._project.slides += worker.slides
+            if self.dialog.exec():
+                if not self.add_thread.wait(10000):
+                    self.add_thread.quit()
+                    self.add_thread.wait(10000)
+                self._slide_queue.add_slides(self.worker.slides)
+                self._project.slides += self.worker.slides
                 self.project_edited.emit()
             else:
                 # If the thread is killed by the user, wait for it to finish.
-                thread.wait()
+                self.add_thread.terminate()
+                if not self.add_thread.wait(10000):
+                    self.add_thread.terminate()
+                    self.add_thread.wait(10000)
 
     """
     Handler for when the user clicks the "Continue" button.
@@ -196,6 +201,10 @@ class AddWorker(QObject):
         self.set_files(filenames)
         self._resolution = resolution
     
+        # 0: Continue processing.
+        # 1: Stop.
+        self.status = 0
+    
     """
     Set the files to be executed.
     @param filenames: list, string of paths to files to be processed.
@@ -209,7 +218,17 @@ class AddWorker(QObject):
     def run(self):
         self.slides = []
         for i in range(len(self.filenames)):
-            self.slides.append(Slide(self.filenames[i]))
-            self.slides[-1].generate_preview(self._resolution)
-            self.progress.emit(i + 1)
+            if not self.status:
+                self.slides.append(Slide(self.filenames[i]))
+                self.slides[-1].generate_preview(self._resolution)
+                self.progress.emit(i + 1)
+            else:
+                self.progress.emit(i + 1)
+                continue
         self.finished.emit()
+
+    """
+    Stops the worker.
+    """
+    def stop(self):
+        self.status = 1

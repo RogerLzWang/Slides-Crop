@@ -53,16 +53,7 @@ class DraggableSlide(QWidget):
     """
     def set_slide(self, slide):
         self._slide = slide
-        if self._slide.preview:
-            self._image.setPixmap(QPixmap(slide.preview.name, format = "PNG")\
-                .scaled(self.image_width, self.image_height, \
-                Qt.AspectRatioMode.KeepAspectRatio, \
-                Qt.TransformationMode.SmoothTransformation))
-        else:
-            self._image.setPixmap(QPixmap(slide.path).scaled(\
-                self.image_width, self.image_height, \
-                Qt.AspectRatioMode.KeepAspectRatio, \
-                Qt.TransformationMode.SmoothTransformation))
+        self._image.setPixmap(self._slide.icon)
         self._text.setText(slide.file_name)
 
     """

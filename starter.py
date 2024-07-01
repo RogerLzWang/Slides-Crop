@@ -353,26 +353,32 @@ class Starter(QWidget):
             verifier = ProjectVerifier(self._project)
             if verifier.verify():
                 # Setting up the dialog and the worker thread.
-                dialog = ProgressDialog("Loading", len(self._project.slides))
+                self.dialog = ProgressDialog("Loading", \
+                                             len(self._project.slides))
 
-                thread = QThread()
-                thread.finished.connect(thread.deleteLater)
-                worker = PreviewWorker(self._project, self._resolution)
-                worker.progress.connect(dialog.update)
-                worker.finished.connect(dialog.accept)
-                worker.finished.connect(thread.quit)
-                worker.finished.connect(worker.deleteLater)
-                worker.moveToThread(thread)
-                thread.started.connect(worker.run)
-                dialog.rejected.connect(thread.exit)
+                self.preview_thread = QThread()
+                self.preview_thread.finished.connect(\
+                    self.preview_thread.deleteLater)
+                self.worker = PreviewWorker(self._project, self._resolution)
+                self.worker.progress.connect(self.dialog.update)
+                self.worker.finished.connect(self.dialog.accept)
+                self.worker.finished.connect(self.preview_thread.quit)
+                self.worker.finished.connect(self.worker.deleteLater)
+                self.dialog.rejected.connect(self.worker.stop)
+                self.worker.moveToThread(self.preview_thread)
+                self.preview_thread.started.connect(self.worker.run)
 
-                thread.start()
-
-                if not dialog.exec():
+                self.preview_thread.start()
+                if not self.dialog.exec():
                     # If the thread is killed, wait for it to finish.
-                    thread.wait()
+                    self.preview_thread.terminate()
+                    if not self.preview_thread.wait(10000):
+                        self.preview_thread.terminate()
+                        self.preview_thread.wait(10000)
                 else:
-                    thread.wait()
+                    if not self.preview_thread.wait(10000):
+                        self.preview_thread.quit()
+                        self.preview_thread.wait(10000)
                     self.continue_clicked.emit(self._project)
 
     """
@@ -400,7 +406,6 @@ class Starter(QWidget):
         info_dialog = InfoDialog()
         info_dialog.exec()
 
-
 class PreviewWorker(QObject):
     # PreviewWorker is a worker class for generating previews.
     # This step is generally slow on larger images, which is why this task is 
@@ -414,6 +419,10 @@ class PreviewWorker(QObject):
         self.slides = []
         self.set_project(project)
         self._resolution = resolution
+
+        # 0: Continue processing.
+        # 1: Stop.
+        self.status = 0
     
     """
     Set the project for which the previews are generated.
@@ -427,6 +436,16 @@ class PreviewWorker(QObject):
     """
     def run(self):
         for i in range(len(self.project.slides)):
-            self.project.slides[i].generate_preview(self._resolution)
-            self.progress.emit(i + 1)
+            if not self.status:
+                self.project.slides[i].generate_preview(self._resolution)
+                self.progress.emit(i + 1)
+            else:
+                self.progress.emit(i + 1)
+                continue
         self.finished.emit()
+
+    """
+    Stops the worker.
+    """
+    def stop(self):
+        self.status = 1

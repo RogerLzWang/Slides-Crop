@@ -23,11 +23,6 @@
 
 import os
 
-from PIL import Image
-
-# Removing the maximum image size limit for Pillow.
-Image.MAX_IMAGE_PIXELS = None
-
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
@@ -144,8 +139,9 @@ class ProjectVerifier():
     @param slide: Slide object.
     """
     def _fix_selections(self, slide):
-        original = Image.open(slide.path)
-        image_width, image_height = original.size
+        original = QImage(slide.path)
+        image_width = original.width()
+        image_height = original.height()
 
         for selection in slide.selections:
             # Calculating the position of the selection rectangle.

@@ -380,9 +380,9 @@ class InfoDialog(QDialog):
         lab_label.setFixedSize(50, 50)
 
         title = "Slides Crop"
-        text_1 = "Version: 1.1.0"
+        text_1 = "Version: 1.1.1"
         text_2 = "Originally Published: 2024-06-22"
-        text_3 = "Last Updated: 2024-06-26"
+        text_3 = "Last Updated: 2024-06-30"
         text_4 = "Author: Lizhou Roger Wang"
         text_5 = "Contact: rogerlzwang@gmail.com"
         text_6 = "Jonathan A. Epstein Lab @ Penn Medicine"

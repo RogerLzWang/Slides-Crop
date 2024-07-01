@@ -14,12 +14,10 @@
 import json
 import math
 import os
-import tempfile
 
-from PIL import Image
-
-# Removing the maximum image size limit for Pillow.
-Image.MAX_IMAGE_PIXELS = None
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+from PyQt6.QtWidgets import *
 
 class Project():
     def __init__(self):
@@ -39,15 +37,6 @@ class Project():
         # width and height contain the default size for all selections.
         self.width = 0
         self.height = 0
-
-    """
-    Deletes all the temporary preview files generated.
-    This function has to be executed when a project is closed!
-    """
-    def delete_temp(self):
-        for slide in self.slides:
-            if slide.preview:
-                os.unlink(slide.preview.name)
 
     """
     Save the project into a JSON format file.
@@ -156,6 +145,7 @@ class Slide():
 
         # Path of the temporary preview file.
         self.preview = None
+        self.icon = None
 
     """
     Check if any selection will be over the boundary of the slide for an 
@@ -206,31 +196,35 @@ class Slide():
 
     """
     Generate a preview temp file and store its path with the given resolution.
-    @param resolution: float, the resolution of the preview files generated.
+    @param preview_res: float, the resolution of the preview files generated.
+    @param icon_width: int, the width of the QPixmap used during Step1.
+    @param icon_height: int, the height of the QPixmap used during Step1.
     """
-    def generate_preview(self, resolution):
-        original = Image.open(self.path)
-        self.width, self.height = original.size
+    def generate_preview(self, preview_res, icon_width = 100, \
+                         icon_height = 100):
+        # For some reason, using QPixmap here clogs the main thread.
+        original = QImage(self.path)
+        self.width = original.width()
+        self.height = original.height()
 
-        if resolution != 1:
-            # Calculating the dimensions of the preview images.
-            preview_size = (math.ceil(self.width * resolution), \
-                            math.ceil(self.height * resolution))
+        if preview_res != 1:
             # Resizing the image.
-            preview = original.resize(preview_size)
-            # Creating temporary files to store the preview images.
-            # Sadly, NamedTemporaryFile opens the file automatically, but 
-            # non-Unix OSes can't read a temporary file while it's opened.
-            # Adding the delete flag here is thus necessary, but then the file 
-            # needs to be deleted manually.
-            self.preview = tempfile.NamedTemporaryFile(suffix = ".png", \
-                                                       delete = False)
-            # Saving the preview images in the temporary files.
-            preview.save(self.preview, format = "PNG")
-            self.preview.close()
-        
-        original.close()
+            self.preview = original.scaled(\
+                math.ceil(self.width * preview_res), \
+                math.ceil(self.height * preview_res), \
+                Qt.AspectRatioMode.KeepAspectRatio, \
+                Qt.TransformationMode.SmoothTransformation)
+        else:
+            self.preview = original
 
+        self.icon = original.scaled(icon_width, icon_height, \
+            Qt.AspectRatioMode.KeepAspectRatio, \
+            Qt.TransformationMode.SmoothTransformation)
+        
+        # Finally, convert the QImages back to QPixmap, losing some efficiency.
+        self.preview = QPixmap.fromImage(self.preview)
+        self.icon = QPixmap.fromImage(self.icon)
+        
     """
     Get a list of the names of the cropped image files for this Slide.
     @return list of str, the list of file names.
@@ -252,22 +246,20 @@ class Slide():
     def save_crops(self, path):
         failed = []
         names = self.get_crop_names()
-        image = Image.open(self.path)
+        original = QImage(self.path)
 
         for i in range(len(self.selections)):
             temp_path = os.path.join(path, names[i])
 
             x = self.selections[i].center_coordinates[0]
             y = self.selections[i].center_coordinates[1]
-            width = self.selections[i].width
-            height = self.selections[i].height
+            width = int(self.selections[i].width)
+            height = int(self.selections[i].height)
 
-            left = x - width // 2
-            right = x + math.ceil(width / 2)
-            top = y - height // 2
-            bottom = y + math.ceil(height / 2)
+            left = int(x - width // 2)
+            top = int(y - height // 2)
 
-            temp_image = image.crop([left, top, right, bottom])
+            temp_image = original.copy(QRect(left, top, width, height))
 
             try:
                 # Removing any existing file with os is always safer.
@@ -278,8 +270,6 @@ class Slide():
             except Exception as e:
                 failed.append(os.path.basename(names[i]))
 
-        image.close()
-        
         return failed
 
 class SlideSelection():

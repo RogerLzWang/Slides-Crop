@@ -320,28 +320,33 @@ class Step2(QWidget):
                 return
             
             # Setting up the dialog and the worker thread.
-            dialog = ProgressDialog("Exporting", 1)
+            self.dialog = ProgressDialog("Exporting", 1)
 
-            thread = QThread()
-            thread.finished.connect(thread.deleteLater)
-            worker = ExportWorker([self._project.slides[\
+            self.export_thread = QThread()
+            self.export_thread.finished.connect(self.export_thread.deleteLater)
+            self.worker = ExportWorker([self._project.slides[\
                 self._project.work_index - 1]], directory)
-            worker.progress.connect(dialog.update)
-            worker.finished.connect(dialog.accept)
-            worker.finished.connect(thread.quit)
-            worker.finished.connect(worker.deleteLater)
-            worker.moveToThread(thread)
-            thread.started.connect(worker.run)
-            dialog.rejected.connect(thread.exit)
+            self.worker.progress.connect(self.dialog.update)
+            self.worker.finished.connect(self.dialog.accept)
+            self.worker.finished.connect(self.export_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.dialog.rejected.connect(self.worker.stop)
+            self.worker.moveToThread(self.export_thread)
+            self.export_thread.started.connect(self.worker.run)
 
-            thread.start()
-            if not dialog.exec():
+            self.export_thread.start()
+            if not self.dialog.exec():
                 # If the thread is killed by the user, wait for it to finish.
-                thread.wait()
+                self.export_thread.terminate()
+                if not self.export_thread.wait(10000):
+                    self.export_thread.terminate()
+                    self.export_thread.wait(10000)
                 return
-
-            thread.wait()
-            failed = worker.get_failed()
+            
+            if not self.export_thread.wait(10000):
+                self.export_thread.quit()
+                self.export_thread.wait(10000)
+            failed = self.worker.get_failed()
             if failed:
                 dialog = ExportErrorDialog(failed)
                 dialog.exec()
@@ -362,27 +367,32 @@ class Step2(QWidget):
                 return
             
             # Setting up the dialog and the worker thread.
-            dialog = ProgressDialog("Exporting", len(self._project.slides))
+            self.dialog = ProgressDialog("Exporting", len(self._project.slides))
 
-            thread = QThread()
-            thread.finished.connect(thread.deleteLater)
-            worker = ExportWorker(self._project.slides, directory)
-            worker.progress.connect(dialog.update)
-            worker.finished.connect(dialog.accept)
-            worker.finished.connect(thread.quit)
-            worker.finished.connect(worker.deleteLater)
-            worker.moveToThread(thread)
-            thread.started.connect(worker.run)
-            dialog.rejected.connect(thread.exit)
+            self.export_thread = QThread()
+            self.export_thread.finished.connect(self.export_thread.deleteLater)
+            self.worker = ExportWorker(self._project.slides, directory)
+            self.worker.progress.connect(self.dialog.update)
+            self.worker.finished.connect(self.dialog.accept)
+            self.worker.finished.connect(self.export_thread.quit)
+            self.worker.finished.connect(self.worker.deleteLater)
+            self.dialog.rejected.connect(self.worker.stop)
+            self.worker.moveToThread(self.export_thread)
+            self.export_thread.started.connect(self.worker.run)
 
-            thread.start()
-            if not dialog.exec():
+            self.export_thread.start()
+            if not self.dialog.exec():
                 # If the thread is killed by the user, wait for it to finish.
-                thread.wait()
+                self.export_thread.terminate()
+                if not self.export_thread.wait(10000):
+                    self.export_thread.terminate()
+                    self.export_thread.wait(10000)
                 return
             
-            thread.wait()
-            failed = worker.get_failed()
+            if not self.export_thread.wait(10000):
+                self.export_thread.quit()
+                self.export_thread.wait(10000)
+            failed = self.worker.get_failed()
             if failed:
                 dialog = ExportErrorDialog(failed)
                 dialog.exec()
@@ -484,6 +494,10 @@ class ExportWorker(QObject):
 
         self.set_slides(slides)
         self.set_directory(directory)
+
+        # 0: Continue processing.
+        # 1: Stop.
+        self.status = 0
     
     """
     Get the images that failed to export.
@@ -512,6 +526,16 @@ class ExportWorker(QObject):
     def run(self):
         self.failed = []
         for i in range(len(self.slides)):
-            self.failed += self.slides[i].save_crops(self.directory)
-            self.progress.emit(i + 1)
+            if not self.status:
+                self.failed += self.slides[i].save_crops(self.directory)
+                self.progress.emit(i + 1)
+            else:
+                self.progress.emit(i + 1)
+                continue
         self.finished.emit()
+
+    """
+    Stops the worker.
+    """
+    def stop(self):
+        self.status = 1
