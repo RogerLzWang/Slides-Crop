@@ -172,8 +172,6 @@ class ProjectVerifier():
                 selection.center_coordinates = (\
                     selection.center_coordinates[0], selection_height // 2)
 
-        original.close()
-
     """
     Handler for when the user clicks the "Remove" button.
     """

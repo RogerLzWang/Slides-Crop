@@ -31,7 +31,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setApplicationName("Slides Crop")
     app.setApplicationDisplayName("Slides Crop")
-    app.setApplicationVersion("1.1.0")
+    app.setApplicationVersion("1.1.2")
     app.setOrganizationName("Jonathan A. Epstein Lab")
     if platform.system() == "Darwin":
         icon = QIcon(os.path.join(BASEDIR, "icon", "Slides Crop.icns"))
